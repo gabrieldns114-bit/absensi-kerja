@@ -421,40 +421,61 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Tombol Absensi -->
-            <div class="row mt-4">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <i class="fas fa-calendar-day"></i> Absensi Hari Ini
-                            <span class="filter-toggle float-end" id="toggle-date-input">
-                                <i class="fas fa-calendar-plus"></i> Input Tanggal Lain
-                            </span>
-                        </div>
-                        <div class="card-body">
-                            <div class="row" id="attendance-buttons">
-                                <div class="col-md-4">
-                                    <button class="btn btn-success attendance-btn" data-type="full">
-                                        <i class="fas fa-check-circle"></i> Berangkat Kerja (Full)
-                                    </button>
-                                </div>
-                                <div class="col-md-4">
-                                    <button class="btn btn-warning attendance-btn" data-type="half">
-                                        <i class="fas fa-clock"></i> Setengah Hari
-                                    </button>
-                                </div>
-                                <div class="col-md-4">
-                                    <button class="btn btn-danger attendance-btn" data-type="absent">
-                                        <i class="fas fa-times-circle"></i> Tidak Masuk
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mt-3" id="today-status"></div>
+            
+            <!-- Tombol Absensi dengan Pilihan Tanggal -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-calendar-day"></i> Input Absensi
+                <span class="float-end">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="attendanceDateType" id="todayDate" value="today" checked>
+                        <label class="form-check-label" for="todayDate">Hari Ini</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="attendanceDateType" id="otherDate" value="other">
+                        <label class="form-check-label" for="otherDate">Tanggal Lain</label>
+                    </div>
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Pilih Tanggal (Tersembunyi Awalnya) -->
+                <div class="row mb-3 hidden" id="date-selector-section">
+                    <div class="col-md-4">
+                        <label for="attendance-date" class="form-label">Pilih Tanggal</label>
+                        <input type="date" class="form-control" id="attendance-date">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="alert alert-info mt-4">
+                            <i class="fas fa-info-circle"></i> Pilih tanggal untuk input absensi yang terlupa.
                         </div>
                     </div>
                 </div>
+
+                <!-- Tombol Absensi -->
+                <div class="row" id="attendance-buttons">
+                    <div class="col-md-4">
+                        <button class="btn btn-success attendance-btn" data-type="full">
+                            <i class="fas fa-check-circle"></i> Berangkat Kerja (Full)
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-warning attendance-btn" data-type="half">
+                            <i class="fas fa-clock"></i> Setengah Hari
+                        </button>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-danger attendance-btn" data-type="absent">
+                            <i class="fas fa-times-circle"></i> Tidak Masuk
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-3" id="today-status"></div>
             </div>
+        </div>
+    </div>
+</div>
 
             <!-- Input Tanggal Lain (Tersembunyi Awalnya) -->
             <div class="row mt-3 hidden" id="custom-date-section">
