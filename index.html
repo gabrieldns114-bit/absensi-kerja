@@ -421,96 +421,57 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Tombol Absensi dengan Pilihan Tanggal -->
-<div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <i class="fas fa-calendar-day"></i> Input Absensi
-                <span class="float-end">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="attendanceDateType" id="todayDate" value="today" checked>
-                        <label class="form-check-label" for="todayDate">Hari Ini</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="attendanceDateType" id="otherDate" value="other">
-                        <label class="form-check-label" for="otherDate">Tanggal Lain</label>
-                    </div>
-                </span>
-            </div>
-            <div class="card-body">
-                <!-- Pilih Tanggal (Tersembunyi Awalnya) -->
-                <div class="row mb-3 hidden" id="date-selector-section">
-                    <div class="col-md-4">
-                        <label for="attendance-date" class="form-label">Pilih Tanggal</label>
-                        <input type="date" class="form-control" id="attendance-date">
-                    </div>
-                    <div class="col-md-8">
-                        <div class="alert alert-info mt-4">
-                            <i class="fas fa-info-circle"></i> Pilih tanggal untuk input absensi yang terlupa.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tombol Absensi -->
-                <div class="row" id="attendance-buttons">
-                    <div class="col-md-4">
-                        <button class="btn btn-success attendance-btn" data-type="full">
-                            <i class="fas fa-check-circle"></i> Berangkat Kerja (Full)
-                        </button>
-                    </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-warning attendance-btn" data-type="half">
-                            <i class="fas fa-clock"></i> Setengah Hari
-                        </button>
-                    </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-danger attendance-btn" data-type="absent">
-                            <i class="fas fa-times-circle"></i> Tidak Masuk
-                        </button>
-                    </div>
-                </div>
-                <div class="mt-3" id="today-status"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-            <!-- Input Tanggal Lain (Tersembunyi Awalnya) -->
-            <div class="row mt-3 hidden" id="custom-date-section">
+            <div class="row mt-4">
                 <div class="col-md-12">
-                    <div class="card" style="border-left: 4px solid var(--secondary-color);">
+                    <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-calendar-alt"></i> Input Data untuk Tanggal Lain
-                            <span class="filter-toggle float-end" id="close-custom-date">
-                                <i class="fas fa-times"></i> Tutup
+                            <i class="fas fa-calendar-day"></i> Input Absensi
+                            <span class="float-end">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="attendanceDateType" id="todayDate" value="today" checked>
+                                    <label class="form-check-label" for="todayDate">Hari Ini</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="attendanceDateType" id="otherDate" value="other">
+                                    <label class="form-check-label" for="otherDate">Tanggal Lain</label>
+                                </div>
                             </span>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label for="custom-date" class="form-label">Pilih Tanggal</label>
-                                    <input type="date" class="form-control" id="custom-date">
+                            <!-- Pilih Tanggal (Tersembunyi Awalnya) -->
+                            <div class="row mb-3 hidden" id="date-selector-section">
+                                <div class="col-md-4">
+                                    <label for="attendance-date" class="form-label">Pilih Tanggal</label>
+                                    <input type="date" class="form-control" id="attendance-date">
                                 </div>
-                                <div class="col-md-8 mb-3">
-                                    <label class="form-label">Pilih Status Absensi</label>
-                                    <div class="d-grid gap-2 d-md-flex">
-                                        <button class="btn btn-success attendance-custom-btn" data-type="full">
-                                            <i class="fas fa-check-circle"></i> Full Day
-                                        </button>
-                                        <button class="btn btn-warning attendance-custom-btn" data-type="half">
-                                            <i class="fas fa-clock"></i> Setengah Hari
-                                        </button>
-                                        <button class="btn btn-danger attendance-custom-btn" data-type="absent">
-                                            <i class="fas fa-times-circle"></i> Tidak Masuk
-                                        </button>
+                                <div class="col-md-8">
+                                    <div class="alert alert-info mt-4">
+                                        <i class="fas fa-info-circle"></i> Pilih tanggal untuk input absensi yang terlupa.
                                     </div>
                                 </div>
                             </div>
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> Gunakan fitur ini untuk input data jika Anda lupa mencatat di hari sebelumnya.
+
+                            <!-- Tombol Absensi -->
+                            <div class="row" id="attendance-buttons">
+                                <div class="col-md-4">
+                                    <button class="btn btn-success attendance-btn" data-type="full">
+                                        <i class="fas fa-check-circle"></i> Berangkat Kerja (Full)
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-warning attendance-btn" data-type="half">
+                                        <i class="fas fa-clock"></i> Setengah Hari
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-danger attendance-btn" data-type="absent">
+                                        <i class="fas fa-times-circle"></i> Tidak Masuk
+                                    </button>
+                                </div>
                             </div>
+                            <div class="mt-3" id="today-status"></div>
                         </div>
                     </div>
                 </div>
@@ -625,7 +586,7 @@
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="sunday-multiplier" class="form-label">Multiplier Hari Minggu</label>
-                                    <div class="input-group">
+                                        <div class="input-group">
                                         <input type="number" class="form-control" id="sunday-multiplier" value="2" step="0.1" min="1">
                                         <span class="input-group-text">x</span>
                                     </div>
@@ -947,11 +908,7 @@
         const totalRecordsSpan = document.getElementById('total-records');
         
         // Elemen input tanggal manual
-        const toggleDateInputBtn = document.getElementById('toggle-date-input');
-        const closeCustomDateBtn = document.getElementById('close-custom-date');
-        const customDateSection = document.getElementById('custom-date-section');
-        const customDateInput = document.getElementById('custom-date');
-        const attendanceCustomButtons = document.querySelectorAll('.attendance-custom-btn');
+        const attendanceDateInput = document.getElementById('attendance-date');
         const kasbonDateInput = document.getElementById('kasbon-date');
         const overtimeDateInput = document.getElementById('overtime-date');
         
@@ -1634,50 +1591,84 @@
 
         // ========== FUNGSI TANGGAL MANUAL ==========
         function setupDateInputs() {
-            const today = formatDateForInput(new Date());
+            const todayRadio = document.getElementById('todayDate');
+            const otherDateRadio = document.getElementById('otherDate');
+            const dateSelectorSection = document.getElementById('date-selector-section');
             
-            // Set default tanggal untuk semua input
-            if (customDateInput) customDateInput.value = today;
-            if (kasbonDateInput) kasbonDateInput.value = today;
-            if (overtimeDateInput) overtimeDateInput.value = today;
+            // Set default tanggal hari ini
+            if (attendanceDateInput) {
+                attendanceDateInput.value = formatDateForInput(new Date());
+            }
             
-            // Toggle section input tanggal lain
-            if (toggleDateInputBtn) {
-                toggleDateInputBtn.addEventListener('click', () => {
-                    customDateSection.classList.remove('hidden');
-                    if (customDateInput) customDateInput.value = today;
+            // Event listener untuk radio button
+            if (todayRadio && otherDateRadio) {
+                todayRadio.addEventListener('change', function() {
+                    if (this.checked) {
+                        dateSelectorSection.classList.add('hidden');
+                    }
+                });
+                
+                otherDateRadio.addEventListener('change', function() {
+                    if (this.checked) {
+                        dateSelectorSection.classList.remove('hidden');
+                        if (attendanceDateInput) {
+                            attendanceDateInput.focus();
+                        }
+                    }
                 });
             }
             
-            if (closeCustomDateBtn) {
-                closeCustomDateBtn.addEventListener('click', () => {
-                    customDateSection.classList.add('hidden');
-                });
-            }
-            
-            // Tombol absensi untuk tanggal custom
-            attendanceCustomButtons.forEach(btn => {
-                btn.addEventListener('click', async function() {
+            // Update event listener untuk tombol absensi
+            document.querySelectorAll('.attendance-btn').forEach(button => {
+                button.addEventListener('click', async function() {
                     if (!currentUser) {
                         showNotification('Login sebagai admin dulu!', 'error');
                         return;
                     }
                     
-                    const date = customDateInput.value;
-                    if (!date) {
-                        showNotification('Pilih tanggal terlebih dahulu!', 'error');
+                    const status = this.getAttribute('data-type');
+                    let selectedDate = '';
+                    let dateLabel = '';
+                    
+                    // Tentukan tanggal berdasarkan pilihan
+                    if (todayRadio && todayRadio.checked) {
+                        selectedDate = formatDateForInput(new Date());
+                        dateLabel = 'hari ini';
+                    } else if (otherDateRadio && otherDateRadio.checked) {
+                        selectedDate = attendanceDateInput ? attendanceDateInput.value : '';
+                        
+                        if (!selectedDate) {
+                            showNotification('Pilih tanggal terlebih dahulu!', 'error');
+                            return;
+                        }
+                        
+                        const dateObj = new Date(selectedDate);
+                        dateLabel = `tanggal ${formatDate(dateObj)}`;
+                    }
+                    
+                    // Validasi tidak bisa input tanggal di masa depan
+                    const today = new Date();
+                    const selectedDateObj = new Date(selectedDate);
+                    today.setHours(0, 0, 0, 0);
+                    selectedDateObj.setHours(0, 0, 0, 0);
+                    
+                    if (selectedDateObj > today) {
+                        showNotification('Tidak bisa input absensi untuk tanggal di masa depan!', 'error');
                         return;
                     }
                     
-                    const status = this.getAttribute('data-type');
-                    const dateObj = new Date(date);
-                    const formattedDate = formatDate(dateObj);
-                    
-                    if (confirm(`Simpan absensi ${status} untuk tanggal ${formattedDate}?`)) {
+                    // Konfirmasi
+                    if (confirm(`Simpan absensi ${status} untuk ${dateLabel}?`)) {
                         const done = showLoading(this);
-                        await saveAttendance(date, status);
+                        await saveAttendance(selectedDate, status);
                         done();
-                        customDateSection.classList.add('hidden');
+                        
+                        // Reset ke hari ini setelah simpan
+                        if (todayRadio) todayRadio.checked = true;
+                        if (dateSelectorSection) dateSelectorSection.classList.add('hidden');
+                        if (attendanceDateInput) {
+                            attendanceDateInput.value = formatDateForInput(new Date());
+                        }
                     }
                 });
             });
@@ -1758,25 +1749,6 @@
             publicViewContainer.classList.add('hidden');
             loginPage.classList.remove('hidden');
             showNotification('Silakan login untuk mengedit data.', 'info');
-        });
-
-        attendanceButtons.forEach(button => {
-            button.addEventListener('click', async function() {
-                if (!currentUser) {
-                    showNotification('Login sebagai admin dulu!', 'error');
-                    return;
-                }
-                
-                const status = this.getAttribute('data-type');
-                const today = formatDateForInput(new Date());
-                const formattedDate = formatDate(new Date());
-                
-                if (confirm(`Simpan absensi ${status} untuk hari ini (${formattedDate})?`)) {
-                    const done = showLoading(this);
-                    await saveAttendance(today, status);
-                    done();
-                }
-            });
         });
 
         kasbonForm.addEventListener('submit', async function(e) {
