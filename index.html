@@ -916,7 +916,6 @@
         const logoutBtn = document.getElementById('logout-btn');
         const publicViewBtn = document.getElementById('public-view-btn');
         const backToLoginBtn = document.getElementById('back-to-login');
-        const attendanceButtons = document.querySelectorAll('.attendance-btn');
         const todayStatus = document.getElementById('today-status');
         const kasbonForm = document.getElementById('kasbon-form');
         const overtimeForm = document.getElementById('overtime-form');
@@ -924,8 +923,6 @@
         const attendanceTable = document.getElementById('attendance-table');
         const publicAttendanceTable = document.getElementById('public-attendance-table');
         const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        const confirmButton = document.getElementById('confirm-button');
-        const confirmMessage = document.getElementById('confirm-message');
         
         // Elemen filter
         const filterTypeSelect = document.getElementById('filter-type');
@@ -950,7 +947,6 @@
         const attendanceDateInput = document.getElementById('attendance-date');
         const quickYesterdayBtn = document.getElementById('quick-yesterday');
         const quickLastWeekBtn = document.getElementById('quick-last-week');
-        const datePresetBtns = document.querySelectorAll('.date-preset-btn');
         const kasbonDateInput = document.getElementById('kasbon-date');
         const overtimeDateInput = document.getElementById('overtime-date');
         
@@ -984,24 +980,42 @@
         const publicFooterTotal = document.getElementById('public-footer-total');
 
         // ========== INISIALISASI FIREBASE ==========
-        try {
-            firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            updateFirebaseStatus("connected", "Firebase Terhubung");
-            document.getElementById('login-status').textContent = "Terhubung ke Firebase";
-            document.getElementById('login-status').className = "text-success";
-        } catch (error) {
-            console.error("Error Firebase:", error);
-            updateFirebaseStatus("disconnected", "Firebase Error: " + error.message);
-            document.getElementById('login-status').textContent = "Error: " + error.message;
-            document.getElementById('login-status').className = "text-danger";
-            showNotification("Firebase Error: " + error.message, "error", 10000);
+        function initializeFirebase() {
+            try {
+                // Cek apakah Firebase sudah diinisialisasi
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                database = firebase.database();
+                updateFirebaseStatus("connected", "Firebase Terhubung");
+                document.getElementById('login-status').textContent = "Terhubung ke Firebase";
+                document.getElementById('login-status').className = "text-success";
+                console.log("✅ Firebase berhasil diinisialisasi");
+                
+                // Test koneksi ke database
+                database.ref('.info/connected').on('value', function(snapshot) {
+                    if (snapshot.val() === true) {
+                        console.log("✅ Terhubung ke Realtime Database");
+                    } else {
+                        console.log("❌ Terputus dari Realtime Database");
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Error Firebase:", error);
+                updateFirebaseStatus("disconnected", "Firebase Error: " + error.message);
+                document.getElementById('login-status').textContent = "Error: " + error.message;
+                document.getElementById('login-status').className = "text-danger";
+                showNotification("Firebase Error: " + error.message, "error", 10000);
+            }
         }
 
         // ========== FUNGSI UTILITAS ==========
         function updateFirebaseStatus(status, text) {
-            firebaseStatus.className = `firebase-status firebase-${status}`;
-            firebaseStatusText.textContent = text;
+            if (firebaseStatus && firebaseStatusText) {
+                firebaseStatus.className = `firebase-status firebase-${status}`;
+                firebaseStatusText.textContent = text;
+            }
         }
 
         function formatDate(date) {
@@ -1060,166 +1074,194 @@
             const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             
             // Set default values
-            monthSelector.value = formatDateForInput(today).slice(0, 7);
-            publicMonthSelector.value = formatDateForInput(today).slice(0, 7);
+            if (monthSelector) monthSelector.value = formatDateForInput(today).slice(0, 7);
+            if (publicMonthSelector) publicMonthSelector.value = formatDateForInput(today).slice(0, 7);
             selectedMonth = formatDateForInput(today).slice(0, 7);
             
-            dateFromInput.value = formatDateForInput(firstDayOfMonth);
-            dateToInput.value = formatDateForInput(today);
-            publicDateFromInput.value = formatDateForInput(firstDayOfMonth);
-            publicDateToInput.value = formatDateForInput(today);
+            if (dateFromInput) dateFromInput.value = formatDateForInput(firstDayOfMonth);
+            if (dateToInput) dateToInput.value = formatDateForInput(today);
+            if (publicDateFromInput) publicDateFromInput.value = formatDateForInput(firstDayOfMonth);
+            if (publicDateToInput) publicDateToInput.value = formatDateForInput(today);
             
             // Event listeners untuk filter type
-            filterTypeSelect.addEventListener('change', function() {
-                filterType = this.value;
-                updateFilterUI();
-                loadAttendanceData();
-            });
+            if (filterTypeSelect) {
+                filterTypeSelect.addEventListener('change', function() {
+                    filterType = this.value;
+                    updateFilterUI();
+                    loadAttendanceData();
+                });
+            }
             
-            publicFilterTypeSelect.addEventListener('change', function() {
-                filterType = this.value;
-                updatePublicFilterUI();
-                loadAttendanceData();
-            });
+            if (publicFilterTypeSelect) {
+                publicFilterTypeSelect.addEventListener('change', function() {
+                    filterType = this.value;
+                    updatePublicFilterUI();
+                    loadAttendanceData();
+                });
+            }
             
             // Event listeners untuk bulan
-            monthSelector.addEventListener('change', function() {
-                selectedMonth = this.value;
-                updateFilterInfo();
-                loadAttendanceData();
-            });
+            if (monthSelector) {
+                monthSelector.addEventListener('change', function() {
+                    selectedMonth = this.value;
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
-            publicMonthSelector.addEventListener('change', function() {
-                selectedMonth = this.value;
-                updatePublicFilterInfo();
-                loadAttendanceData();
-            });
+            if (publicMonthSelector) {
+                publicMonthSelector.addEventListener('change', function() {
+                    selectedMonth = this.value;
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
             // Event listeners untuk rentang tanggal
-            applyDateRangeBtn.addEventListener('click', function() {
-                dateFrom = dateFromInput.value;
-                dateTo = dateToInput.value;
-                
-                if (!dateFrom || !dateTo) {
-                    showNotification('Isi kedua tanggal!', 'error');
-                    return;
-                }
-                
-                if (dateFrom > dateTo) {
-                    showNotification('Tanggal "Dari" harus sebelum tanggal "Sampai"', 'error');
-                    return;
-                }
-                
-                updateFilterInfo();
-                loadAttendanceData();
-            });
+            if (applyDateRangeBtn) {
+                applyDateRangeBtn.addEventListener('click', function() {
+                    dateFrom = dateFromInput.value;
+                    dateTo = dateToInput.value;
+                    
+                    if (!dateFrom || !dateTo) {
+                        showNotification('Isi kedua tanggal!', 'error');
+                        return;
+                    }
+                    
+                    if (dateFrom > dateTo) {
+                        showNotification('Tanggal "Dari" harus sebelum tanggal "Sampai"', 'error');
+                        return;
+                    }
+                    
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
-            publicApplyDateRangeBtn.addEventListener('click', function() {
-                dateFrom = publicDateFromInput.value;
-                dateTo = publicDateToInput.value;
-                
-                if (!dateFrom || !dateTo) {
-                    showNotification('Isi kedua tanggal!', 'error');
-                    return;
-                }
-                
-                if (dateFrom > dateTo) {
-                    showNotification('Tanggal "Dari" harus sebelum tanggal "Sampai"', 'error');
-                    return;
-                }
-                
-                updatePublicFilterInfo();
-                loadAttendanceData();
-            });
+            if (publicApplyDateRangeBtn) {
+                publicApplyDateRangeBtn.addEventListener('click', function() {
+                    dateFrom = publicDateFromInput.value;
+                    dateTo = publicDateToInput.value;
+                    
+                    if (!dateFrom || !dateTo) {
+                        showNotification('Isi kedua tanggal!', 'error');
+                        return;
+                    }
+                    
+                    if (dateFrom > dateTo) {
+                        showNotification('Tanggal "Dari" harus sebelum tanggal "Sampai"', 'error');
+                        return;
+                    }
+                    
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
             // Reset buttons
-            resetMonthFilterBtn.addEventListener('click', function() {
-                const today = new Date();
-                monthSelector.value = formatDateForInput(today).slice(0, 7);
-                selectedMonth = formatDateForInput(today).slice(0, 7);
-                updateFilterInfo();
-                loadAttendanceData();
-            });
+            if (resetMonthFilterBtn) {
+                resetMonthFilterBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    monthSelector.value = formatDateForInput(today).slice(0, 7);
+                    selectedMonth = formatDateForInput(today).slice(0, 7);
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
-            publicResetMonthFilterBtn.addEventListener('click', function() {
-                const today = new Date();
-                publicMonthSelector.value = formatDateForInput(today).slice(0, 7);
-                selectedMonth = formatDateForInput(today).slice(0, 7);
-                updatePublicFilterInfo();
-                loadAttendanceData();
-            });
+            if (publicResetMonthFilterBtn) {
+                publicResetMonthFilterBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    publicMonthSelector.value = formatDateForInput(today).slice(0, 7);
+                    selectedMonth = formatDateForInput(today).slice(0, 7);
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
-            resetDateRangeBtn.addEventListener('click', function() {
-                const today = new Date();
-                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                dateFromInput.value = formatDateForInput(firstDayOfMonth);
-                dateToInput.value = formatDateForInput(today);
-                dateFrom = '';
-                dateTo = '';
-                updateFilterInfo();
-                loadAttendanceData();
-            });
+            if (resetDateRangeBtn) {
+                resetDateRangeBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    dateFromInput.value = formatDateForInput(firstDayOfMonth);
+                    dateToInput.value = formatDateForInput(today);
+                    dateFrom = '';
+                    dateTo = '';
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
-            publicResetDateRangeBtn.addEventListener('click', function() {
-                const today = new Date();
-                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                publicDateFromInput.value = formatDateForInput(firstDayOfMonth);
-                publicDateToInput.value = formatDateForInput(today);
-                dateFrom = '';
-                dateTo = '';
-                updatePublicFilterInfo();
-                loadAttendanceData();
-            });
+            if (publicResetDateRangeBtn) {
+                publicResetDateRangeBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    publicDateFromInput.value = formatDateForInput(firstDayOfMonth);
+                    publicDateToInput.value = formatDateForInput(today);
+                    dateFrom = '';
+                    dateTo = '';
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
             
             // Clear all filter
-            clearAllFilterBtn.addEventListener('click', function() {
-                filterType = 'all';
-                filterTypeSelect.value = 'all';
-                selectedMonth = '';
-                dateFrom = '';
-                dateTo = '';
-                updateFilterUI();
-                updateFilterInfo();
-                loadAttendanceData();
-                showNotification('Semua filter dihapus', 'info');
-            });
+            if (clearAllFilterBtn) {
+                clearAllFilterBtn.addEventListener('click', function() {
+                    filterType = 'all';
+                    filterTypeSelect.value = 'all';
+                    selectedMonth = '';
+                    dateFrom = '';
+                    dateTo = '';
+                    updateFilterUI();
+                    updateFilterInfo();
+                    loadAttendanceData();
+                    showNotification('Semua filter dihapus', 'info');
+                });
+            }
             
-            publicClearAllFilterBtn.addEventListener('click', function() {
-                filterType = 'all';
-                publicFilterTypeSelect.value = 'all';
-                selectedMonth = '';
-                dateFrom = '';
-                dateTo = '';
-                updatePublicFilterUI();
-                updatePublicFilterInfo();
-                loadAttendanceData();
-                showNotification('Semua filter dihapus', 'info');
-            });
+            if (publicClearAllFilterBtn) {
+                publicClearAllFilterBtn.addEventListener('click', function() {
+                    filterType = 'all';
+                    publicFilterTypeSelect.value = 'all';
+                    selectedMonth = '';
+                    dateFrom = '';
+                    dateTo = '';
+                    updatePublicFilterUI();
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                    showNotification('Semua filter dihapus', 'info');
+                });
+            }
         }
 
         function updateFilterUI() {
-            if (filterType === 'month') {
-                monthFilterSection.classList.remove('hidden');
-                dateRangeFilterSection.classList.add('hidden');
-            } else if (filterType === 'range') {
-                monthFilterSection.classList.add('hidden');
-                dateRangeFilterSection.classList.remove('hidden');
-            } else {
-                monthFilterSection.classList.add('hidden');
-                dateRangeFilterSection.classList.add('hidden');
+            if (monthFilterSection && dateRangeFilterSection) {
+                if (filterType === 'month') {
+                    monthFilterSection.classList.remove('hidden');
+                    dateRangeFilterSection.classList.add('hidden');
+                } else if (filterType === 'range') {
+                    monthFilterSection.classList.add('hidden');
+                    dateRangeFilterSection.classList.remove('hidden');
+                } else {
+                    monthFilterSection.classList.add('hidden');
+                    dateRangeFilterSection.classList.add('hidden');
+                }
             }
         }
 
         function updatePublicFilterUI() {
-            if (filterType === 'month') {
-                publicMonthFilterSection.classList.remove('hidden');
-                publicDateRangeFilterSection.classList.add('hidden');
-            } else if (filterType === 'range') {
-                publicMonthFilterSection.classList.add('hidden');
-                publicDateRangeFilterSection.classList.remove('hidden');
-            } else {
-                publicMonthFilterSection.classList.add('hidden');
-                publicDateRangeFilterSection.classList.add('hidden');
+            if (publicMonthFilterSection && publicDateRangeFilterSection) {
+                if (filterType === 'month') {
+                    publicMonthFilterSection.classList.remove('hidden');
+                    publicDateRangeFilterSection.classList.add('hidden');
+                } else if (filterType === 'range') {
+                    publicMonthFilterSection.classList.add('hidden');
+                    publicDateRangeFilterSection.classList.remove('hidden');
+                } else {
+                    publicMonthFilterSection.classList.add('hidden');
+                    publicDateRangeFilterSection.classList.add('hidden');
+                }
             }
         }
 
@@ -1231,24 +1273,42 @@
                 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
                                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                 info = `Bulan: ${monthNames[parseInt(month) - 1]} ${year}`;
-                activeFilterInfo.classList.remove('hidden');
-                filterBadge.textContent = 'Bulan';
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.remove('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = 'Bulan';
+                }
             } else if (filterType === 'range' && dateFrom && dateTo) {
                 const fromDate = new Date(dateFrom);
                 const toDate = new Date(dateTo);
                 info = `Rentang: ${formatShortDate(fromDate)} - ${formatShortDate(toDate)}`;
-                activeFilterInfo.classList.remove('hidden');
-                filterBadge.textContent = 'Rentang';
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.remove('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = 'Rentang';
+                }
             } else if (filterType === 'all') {
                 info = 'Semua Data';
-                activeFilterInfo.classList.remove('hidden');
-                filterBadge.textContent = 'Semua';
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.remove('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = 'Semua';
+                }
             } else {
-                activeFilterInfo.classList.add('hidden');
-                filterBadge.textContent = '';
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.add('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = '';
+                }
             }
             
-            filterInfoText.textContent = info;
+            if (filterInfoText) {
+                filterInfoText.textContent = info;
+            }
         }
 
         function updatePublicFilterInfo() {
@@ -1259,20 +1319,30 @@
                 const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
                                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                 info = `Bulan: ${monthNames[parseInt(month) - 1]} ${year}`;
-                publicActiveFilterInfo.classList.remove('hidden');
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.remove('hidden');
+                }
             } else if (filterType === 'range' && dateFrom && dateTo) {
                 const fromDate = new Date(dateFrom);
                 const toDate = new Date(dateTo);
                 info = `Rentang: ${formatShortDate(fromDate)} - ${formatShortDate(toDate)}`;
-                publicActiveFilterInfo.classList.remove('hidden');
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.remove('hidden');
+                }
             } else if (filterType === 'all') {
                 info = 'Semua Data';
-                publicActiveFilterInfo.classList.remove('hidden');
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.remove('hidden');
+                }
             } else {
-                publicActiveFilterInfo.classList.add('hidden');
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.add('hidden');
+                }
             }
             
-            publicFilterInfoText.textContent = info;
+            if (publicFilterInfoText) {
+                publicFilterInfoText.textContent = info;
+            }
         }
 
         function shouldIncludeDate(dateStr) {
@@ -1312,7 +1382,10 @@
             };
             
             try {
-                await database.ref('attendance/' + date).set(attendanceData, { merge: true });
+                console.log("Menyimpan data ke Firebase:", attendanceData);
+                
+                // Gunakan set() bukan update() untuk overwrite data yang ada
+                await database.ref('attendance/' + date).set(attendanceData);
                 
                 const dateObj = new Date(date);
                 const formattedDate = formatDate(dateObj);
@@ -1341,8 +1414,11 @@
 
         async function loadAttendanceData() {
             try {
+                console.log("Memuat data dari Firebase...");
                 const snapshot = await database.ref('attendance').once('value');
                 const allData = snapshot.val() || {};
+                
+                console.log("Data diterima:", allData);
                 
                 attendanceData = [];
                 let fullDayCount = 0;
@@ -1356,28 +1432,32 @@
                 let recordCount = 0;
                 
                 // Reset tabel
-                attendanceTable.innerHTML = '';
-                publicAttendanceTable.innerHTML = '';
+                if (attendanceTable) attendanceTable.innerHTML = '';
+                if (publicAttendanceTable) publicAttendanceTable.innerHTML = '';
                 
                 const dates = Object.keys(allData);
                 if (dates.length === 0) {
-                    attendanceTable.innerHTML = `
-                        <tr id="no-data">
-                            <td colspan="9" class="text-center text-muted py-4">
-                                <i class="fas fa-database fa-2x mb-3"></i><br>
-                                Belum ada data absensi.
-                            </td>
-                        </tr>
-                    `;
+                    if (attendanceTable) {
+                        attendanceTable.innerHTML = `
+                            <tr id="no-data">
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="fas fa-database fa-2x mb-3"></i><br>
+                                    Belum ada data absensi.
+                                </td>
+                            </tr>
+                        `;
+                    }
                     
-                    publicAttendanceTable.innerHTML = `
-                        <tr id="public-no-data">
-                            <td colspan="8" class="text-center text-muted py-4">
-                                <i class="fas fa-database fa-2x mb-3"></i><br>
-                                Belum ada data absensi.
-                            </td>
-                        </tr>
-                    `;
+                    if (publicAttendanceTable) {
+                        publicAttendanceTable.innerHTML = `
+                            <tr id="public-no-data">
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-database fa-2x mb-3"></i><br>
+                                    Belum ada data absensi.
+                                </td>
+                            </tr>
+                        `;
+                    }
                     
                     updateStatistics(0, 0, 0, 0, 0);
                     updateFooter(0, 0, 0, 0, 0, 0);
@@ -1437,7 +1517,7 @@
                     }
                     
                     // Baris untuk admin
-                    if (currentUser === 'admin') {
+                    if (currentUser === 'admin' && attendanceTable) {
                         const row = document.createElement('tr');
                         row.innerHTML = `
                             <td>${formattedDate}</td>
@@ -1458,18 +1538,20 @@
                     }
                     
                     // Baris untuk publik
-                    const publicRow = document.createElement('tr');
-                    publicRow.innerHTML = `
-                        <td>${formattedDate}</td>
-                        <td>${dayName}</td>
-                        <td><span class="badge ${statusClass} badge-status">${statusLabel}</span></td>
-                        <td>${data.kasbon ? formatCurrency(data.kasbon) : '-'}</td>
-                        <td>${data.overtime || '-'}</td>
-                        <td>${data.sundayBonus ? formatCurrency(data.sundayBonus) : '-'}</td>
-                        <td>${formatCurrency(salary.dailySalary)}</td>
-                        <td><strong>${formatCurrency(salary.total)}</strong></td>
-                    `;
-                    publicAttendanceTable.appendChild(publicRow);
+                    if (publicAttendanceTable) {
+                        const publicRow = document.createElement('tr');
+                        publicRow.innerHTML = `
+                            <td>${formattedDate}</td>
+                            <td>${dayName}</td>
+                            <td><span class="badge ${statusClass} badge-status">${statusLabel}</span></td>
+                            <td>${data.kasbon ? formatCurrency(data.kasbon) : '-'}</td>
+                            <td>${data.overtime || '-'}</td>
+                            <td>${data.sundayBonus ? formatCurrency(data.sundayBonus) : '-'}</td>
+                            <td>${formatCurrency(salary.dailySalary)}</td>
+                            <td><strong>${formatCurrency(salary.total)}</strong></td>
+                        `;
+                        publicAttendanceTable.appendChild(publicRow);
+                    }
                 });
                 
                 // Urutkan berdasarkan tanggal (terbaru di atas)
@@ -1495,6 +1577,7 @@
                 });
                 
             } catch (error) {
+                console.error('Gagal memuat data:', error);
                 showNotification('Gagal memuat data: ' + error.message, 'error');
             }
         }
@@ -1518,11 +1601,18 @@
         }
 
         function updateStatistics(fullDay, halfDay, absent, totalSalary, totalKasbon) {
-            document.getElementById('full-day-count').textContent = fullDay;
-            document.getElementById('half-day-count').textContent = halfDay;
-            document.getElementById('absent-count').textContent = absent;
-            document.getElementById('total-salary').textContent = formatCurrency(totalSalary);
-            document.getElementById('total-kasbon').textContent = formatCurrency(totalKasbon);
+            const fullDayCountEl = document.getElementById('full-day-count');
+            const halfDayCountEl = document.getElementById('half-day-count');
+            const absentCountEl = document.getElementById('absent-count');
+            const totalSalaryEl = document.getElementById('total-salary');
+            const totalKasbonEl = document.getElementById('total-kasbon');
+            const kasbonPeriodEl = document.getElementById('kasbon-period');
+            
+            if (fullDayCountEl) fullDayCountEl.textContent = fullDay;
+            if (halfDayCountEl) halfDayCountEl.textContent = halfDay;
+            if (absentCountEl) absentCountEl.textContent = absent;
+            if (totalSalaryEl) totalSalaryEl.textContent = formatCurrency(totalSalary);
+            if (totalKasbonEl) totalKasbonEl.textContent = formatCurrency(totalKasbon);
             
             // Update period info untuk kasbon
             let periodText = '(Dalam periode yang difilter)';
@@ -1538,65 +1628,67 @@
             } else if (filterType === 'all') {
                 periodText = '(Semua data)';
             }
-            document.getElementById('kasbon-period').textContent = periodText;
+            if (kasbonPeriodEl) kasbonPeriodEl.textContent = periodText;
         }
 
         function updatePublicStats(fullDay, halfDay, absent, totalSalary, totalKasbon) {
             const publicStats = document.getElementById('public-stats');
-            publicStats.innerHTML = `
-                <div class="col-md-3">
-                    <div class="stat-card full-day">
-                        <h5><i class="fas fa-check-circle"></i> Full Day</h5>
-                        <h3>${fullDay}</h3>
+            if (publicStats) {
+                publicStats.innerHTML = `
+                    <div class="col-md-3">
+                        <div class="stat-card full-day">
+                            <h5><i class="fas fa-check-circle"></i> Full Day</h5>
+                            <h3>${fullDay}</h3>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card half-day">
-                        <h5><i class="fas fa-clock"></i> Setengah Hari</h5>
-                        <h3>${halfDay}</h3>
+                    <div class="col-md-3">
+                        <div class="stat-card half-day">
+                            <h5><i class="fas fa-clock"></i> Setengah Hari</h5>
+                            <h3>${halfDay}</h3>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card absent">
-                        <h5><i class="fas fa-times-circle"></i> Tidak Masuk</h5>
-                        <h3>${absent}</h3>
+                    <div class="col-md-3">
+                        <div class="stat-card absent">
+                            <h5><i class="fas fa-times-circle"></i> Tidak Masuk</h5>
+                            <h3>${absent}</h3>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="stat-card income">
-                        <h5><i class="fas fa-money-bill-wave"></i> Total Gaji</h5>
-                        <h3>${formatCurrency(totalSalary)}</h3>
+                    <div class="col-md-3">
+                        <div class="stat-card income">
+                            <h5><i class="fas fa-money-bill-wave"></i> Total Gaji</h5>
+                            <h3>${formatCurrency(totalSalary)}</h3>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         }
 
         function updateFooter(records, kasbon, overtimeHours, bonus, gaji, total) {
-            totalRecordsSpan.textContent = records;
+            if (totalRecordsSpan) totalRecordsSpan.textContent = records;
             
-            if (records > 0) {
+            if (records > 0 && tableFooter) {
                 tableFooter.classList.remove('hidden');
-                footerKasbon.textContent = formatCurrency(kasbon);
-                footerOvertime.textContent = overtimeHours.toFixed(1) + ' jam';
-                footerBonus.textContent = formatCurrency(bonus);
-                footerGaji.textContent = formatCurrency(gaji);
-                footerTotal.textContent = formatCurrency(total);
-            } else {
+                if (footerKasbon) footerKasbon.textContent = formatCurrency(kasbon);
+                if (footerOvertime) footerOvertime.textContent = overtimeHours.toFixed(1) + ' jam';
+                if (footerBonus) footerBonus.textContent = formatCurrency(bonus);
+                if (footerGaji) footerGaji.textContent = formatCurrency(gaji);
+                if (footerTotal) footerTotal.textContent = formatCurrency(total);
+            } else if (tableFooter) {
                 tableFooter.classList.add('hidden');
             }
         }
 
         function updatePublicFooter(records, kasbon, overtimeHours, bonus, gaji, total) {
-            publicTotalRecordsSpan.textContent = records;
+            if (publicTotalRecordsSpan) publicTotalRecordsSpan.textContent = records;
             
-            if (records > 0) {
+            if (records > 0 && publicTableFooter) {
                 publicTableFooter.classList.remove('hidden');
-                publicFooterKasbon.textContent = formatCurrency(kasbon);
-                publicFooterOvertime.textContent = overtimeHours.toFixed(1) + ' jam';
-                publicFooterBonus.textContent = formatCurrency(bonus);
-                publicFooterGaji.textContent = formatCurrency(gaji);
-                publicFooterTotal.textContent = formatCurrency(total);
-            } else {
+                if (publicFooterKasbon) publicFooterKasbon.textContent = formatCurrency(kasbon);
+                if (publicFooterOvertime) publicFooterOvertime.textContent = overtimeHours.toFixed(1) + ' jam';
+                if (publicFooterBonus) publicFooterBonus.textContent = formatCurrency(bonus);
+                if (publicFooterGaji) publicFooterGaji.textContent = formatCurrency(gaji);
+                if (publicFooterTotal) publicFooterTotal.textContent = formatCurrency(total);
+            } else if (publicTableFooter) {
                 publicTableFooter.classList.add('hidden');
             }
         }
@@ -1605,28 +1697,30 @@
             const today = formatDateForInput(new Date());
             const todayData = attendanceData.find(item => item.date === today);
             
-            todayStatus.innerHTML = '';
-            
-            if (todayData && todayData.status) {
-                let statusText = '';
-                let statusClass = '';
+            if (todayStatus) {
+                todayStatus.innerHTML = '';
                 
-                if (todayData.status === 'full') {
-                    statusText = 'Anda sudah mencatat absensi FULL DAY hari ini.';
-                    statusClass = 'alert-success';
-                } else if (todayData.status === 'half') {
-                    statusText = 'Anda sudah mencatat absensi SETENGAH HARI hari ini.';
-                    statusClass = 'alert-warning';
-                } else if (todayData.status === 'absent') {
-                    statusText = 'Anda sudah mencatat TIDAK MASUK hari ini.';
-                    statusClass = 'alert-danger';
-                }
-                
-                if (statusText) {
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = `alert ${statusClass}`;
-                    alertDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${statusText}`;
-                    todayStatus.appendChild(alertDiv);
+                if (todayData && todayData.status) {
+                    let statusText = '';
+                    let statusClass = '';
+                    
+                    if (todayData.status === 'full') {
+                        statusText = 'Anda sudah mencatat absensi FULL DAY hari ini.';
+                        statusClass = 'alert-success';
+                    } else if (todayData.status === 'half') {
+                        statusText = 'Anda sudah mencatat absensi SETENGAH HARI hari ini.';
+                        statusClass = 'alert-warning';
+                    } else if (todayData.status === 'absent') {
+                        statusText = 'Anda sudah mencatat TIDAK MASUK hari ini.';
+                        statusClass = 'alert-danger';
+                    }
+                    
+                    if (statusText) {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert ${statusClass}`;
+                        alertDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${statusText}`;
+                        todayStatus.appendChild(alertDiv);
+                    }
                 }
             }
         }
@@ -1643,13 +1737,13 @@
             // Event listener untuk radio button
             if (todayDateRadio && otherDateRadio) {
                 todayDateRadio.addEventListener('change', function() {
-                    if (this.checked) {
+                    if (this.checked && dateSelectorSection) {
                         dateSelectorSection.classList.add('hidden');
                     }
                 });
                 
                 otherDateRadio.addEventListener('change', function() {
-                    if (this.checked) {
+                    if (this.checked && dateSelectorSection) {
                         dateSelectorSection.classList.remove('hidden');
                         if (attendanceDateInput) {
                             attendanceDateInput.focus();
@@ -1682,7 +1776,7 @@
             }
             
             // Tombol preset tanggal
-            datePresetBtns.forEach(btn => {
+            document.querySelectorAll('.date-preset-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const daysOffset = parseInt(this.getAttribute('data-days'));
                     const targetDate = new Date();
@@ -1695,7 +1789,18 @@
                 });
             });
             
-            // Update event listener untuk tombol absensi
+            // Setup tombol absensi
+            setupAttendanceButtons();
+        }
+
+        function setupAttendanceButtons() {
+            // Hapus event listener lama jika ada
+            const oldButtons = document.querySelectorAll('.attendance-btn');
+            oldButtons.forEach(btn => {
+                btn.replaceWith(btn.cloneNode(true));
+            });
+            
+            // Tambah event listener baru
             document.querySelectorAll('.attendance-btn').forEach(button => {
                 button.addEventListener('click', async function() {
                     if (!currentUser) {
@@ -1721,6 +1826,10 @@
                         
                         const dateObj = new Date(selectedDate);
                         dateLabel = `tanggal ${formatDate(dateObj)}`;
+                    } else {
+                        // Default ke hari ini
+                        selectedDate = formatDateForInput(new Date());
+                        dateLabel = 'hari ini';
                     }
                     
                     // Validasi tidak bisa input tanggal di masa depan
@@ -1756,17 +1865,23 @@
             console.log("🚀 Menginisialisasi aplikasi...");
             
             const now = new Date();
-            document.getElementById('current-date').textContent = formatDate(now);
+            const currentDateEl = document.getElementById('current-date');
+            if (currentDateEl) currentDateEl.textContent = formatDate(now);
             
             // Load konfigurasi gaji dari localStorage
             const savedConfig = localStorage.getItem('absensi_salary_config');
             if (savedConfig) {
                 try {
                     salaryConfig = JSON.parse(savedConfig);
-                    document.getElementById('daily-salary').value = salaryConfig.dailySalary;
-                    document.getElementById('overtime-rate').value = salaryConfig.overtimeRate;
-                    document.getElementById('half-day-rate').value = salaryConfig.halfDayRate;
-                    document.getElementById('sunday-multiplier').value = salaryConfig.sundayMultiplier;
+                    const dailySalaryEl = document.getElementById('daily-salary');
+                    const overtimeRateEl = document.getElementById('overtime-rate');
+                    const halfDayRateEl = document.getElementById('half-day-rate');
+                    const sundayMultiplierEl = document.getElementById('sunday-multiplier');
+                    
+                    if (dailySalaryEl) dailySalaryEl.value = salaryConfig.dailySalary;
+                    if (overtimeRateEl) overtimeRateEl.value = salaryConfig.overtimeRate;
+                    if (halfDayRateEl) halfDayRateEl.value = salaryConfig.halfDayRate;
+                    if (sundayMultiplierEl) sundayMultiplierEl.value = salaryConfig.sundayMultiplier;
                 } catch (e) {
                     console.warn("Gagal load konfigurasi gaji:", e);
                 }
@@ -1782,129 +1897,164 @@
             else if (hour < 15) greeting = 'Selamat siang';
             else if (hour < 19) greeting = 'Selamat sore';
             
-            document.getElementById('greeting-text').textContent = `${greeting}!`;
+            const greetingTextEl = document.getElementById('greeting-text');
+            if (greetingTextEl) greetingTextEl.textContent = `${greeting}!`;
             
             console.log("✅ Aplikasi siap digunakan");
         }
 
         // ========== EVENT LISTENERS ==========
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const password = document.getElementById('password').value;
-            
-            if (password === APP_PASSWORD) {
-                currentUser = 'admin';
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const password = document.getElementById('password').value;
+                
+                if (password === APP_PASSWORD) {
+                    currentUser = 'admin';
+                    loginPage.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    publicViewContainer.classList.add('hidden');
+                    showNotification('Login sebagai Admin berhasil!', 'success');
+                    initializeApp();
+                } else {
+                    const loginError = document.getElementById('login-error');
+                    if (loginError) {
+                        loginError.textContent = 'Password salah!';
+                        loginError.classList.remove('hidden');
+                    }
+                    showNotification('Password salah!', 'error');
+                }
+            });
+        }
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                currentUser = null;
+                appContainer.classList.add('hidden');
+                loginPage.classList.remove('hidden');
+                const passwordInput = document.getElementById('password');
+                if (passwordInput) passwordInput.value = '';
+                showNotification('Anda telah logout.', 'info');
+            });
+        }
+
+        if (publicViewBtn) {
+            publicViewBtn.addEventListener('click', function() {
                 loginPage.classList.add('hidden');
-                appContainer.classList.remove('hidden');
-                publicViewContainer.classList.add('hidden');
-                showNotification('Login sebagai Admin berhasil!', 'success');
+                publicViewContainer.classList.remove('hidden');
+                currentUser = null;
                 initializeApp();
-            } else {
-                document.getElementById('login-error').textContent = 'Password salah!';
-                document.getElementById('login-error').classList.remove('hidden');
-                showNotification('Password salah!', 'error');
-            }
-        });
+                showNotification('Mode tampilan publik diaktifkan.', 'info');
+            });
+        }
 
-        logoutBtn.addEventListener('click', function() {
-            currentUser = null;
-            appContainer.classList.add('hidden');
-            loginPage.classList.remove('hidden');
-            document.getElementById('password').value = '';
-            showNotification('Anda telah logout.', 'info');
-        });
+        if (backToLoginBtn) {
+            backToLoginBtn.addEventListener('click', function() {
+                publicViewContainer.classList.add('hidden');
+                loginPage.classList.remove('hidden');
+                showNotification('Silakan login untuk mengedit data.', 'info');
+            });
+        }
 
-        publicViewBtn.addEventListener('click', function() {
-            loginPage.classList.add('hidden');
-            publicViewContainer.classList.remove('hidden');
-            currentUser = null;
-            initializeApp();
-            showNotification('Mode tampilan publik diaktifkan.', 'info');
-        });
-
-        backToLoginBtn.addEventListener('click', function() {
-            publicViewContainer.classList.add('hidden');
-            loginPage.classList.remove('hidden');
-            showNotification('Silakan login untuk mengedit data.', 'info');
-        });
-
-        kasbonForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            if (!currentUser) {
-                showNotification('Login sebagai admin dulu!', 'error');
-                return;
-            }
-            
-            const date = kasbonDateInput.value || formatDateForInput(new Date());
-            const amount = document.getElementById('kasbon-amount').value;
-            const note = document.getElementById('kasbon-note').value;
-            
-            if (!amount || parseFloat(amount) <= 0) {
-                showNotification('Masukkan jumlah kasbon yang valid!', 'error');
-                return;
-            }
-            
-            const dateObj = new Date(date);
-            const formattedDate = formatDate(dateObj);
-            
-            if (confirm(`Tambah kasbon Rp ${parseFloat(amount).toLocaleString('id-ID')} untuk tanggal ${formattedDate}?`)) {
-                const done = showLoading(this.querySelector('button'));
-                await saveAttendance(date, undefined, parseFloat(amount), undefined, undefined, note);
-                done();
+        if (kasbonForm) {
+            kasbonForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if (!currentUser) {
+                    showNotification('Login sebagai admin dulu!', 'error');
+                    return;
+                }
                 
-                document.getElementById('kasbon-amount').value = '';
-                document.getElementById('kasbon-note').value = '';
-                kasbonDateInput.value = formatDateForInput(new Date());
-            }
-        });
-
-        overtimeForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            if (!currentUser) {
-                showNotification('Login sebagai admin dulu!', 'error');
-                return;
-            }
-            
-            const date = overtimeDateInput.value || formatDateForInput(new Date());
-            const overtimeHours = document.getElementById('overtime-hours').value || 0;
-            const sundayBonus = document.getElementById('sunday-bonus').value || 0;
-            
-            if (parseFloat(overtimeHours) <= 0 && parseFloat(sundayBonus) <= 0) {
-                showNotification('Isi jam lembur atau bonus minggu!', 'error');
-                return;
-            }
-            
-            const dateObj = new Date(date);
-            const formattedDate = formatDate(dateObj);
-            
-            let message = `Simpan data untuk tanggal ${formattedDate}?\n`;
-            if (overtimeHours > 0) message += `- Lembur: ${overtimeHours} jam\n`;
-            if (sundayBonus > 0) message += `- Bonus Minggu: Rp ${parseFloat(sundayBonus).toLocaleString('id-ID')}`;
-            
-            if (confirm(message)) {
-                const done = showLoading(this.querySelector('button'));
-                await saveAttendance(date, undefined, undefined, parseFloat(overtimeHours), parseFloat(sundayBonus));
-                done();
+                const date = kasbonDateInput ? kasbonDateInput.value : formatDateForInput(new Date());
+                const amount = document.getElementById('kasbon-amount')?.value;
+                const note = document.getElementById('kasbon-note')?.value;
                 
-                document.getElementById('overtime-hours').value = '';
-                document.getElementById('sunday-bonus').value = '';
-                overtimeDateInput.value = formatDateForInput(new Date());
-            }
-        });
+                if (!amount || parseFloat(amount) <= 0) {
+                    showNotification('Masukkan jumlah kasbon yang valid!', 'error');
+                    return;
+                }
+                
+                const dateObj = new Date(date);
+                const formattedDate = formatDate(dateObj);
+                
+                if (confirm(`Tambah kasbon Rp ${parseFloat(amount).toLocaleString('id-ID')} untuk tanggal ${formattedDate}?`)) {
+                    const button = this.querySelector('button');
+                    const done = showLoading(button);
+                    await saveAttendance(date, undefined, parseFloat(amount), undefined, undefined, note);
+                    done();
+                    
+                    const kasbonAmountEl = document.getElementById('kasbon-amount');
+                    const kasbonNoteEl = document.getElementById('kasbon-note');
+                    
+                    if (kasbonAmountEl) kasbonAmountEl.value = '';
+                    if (kasbonNoteEl) kasbonNoteEl.value = '';
+                    if (kasbonDateInput) kasbonDateInput.value = formatDateForInput(new Date());
+                }
+            });
+        }
 
-        calculateSalaryBtn.addEventListener('click', function() {
-            salaryConfig.dailySalary = parseInt(document.getElementById('daily-salary').value) || 100000;
-            salaryConfig.overtimeRate = parseInt(document.getElementById('overtime-rate').value) || 20000;
-            salaryConfig.halfDayRate = parseInt(document.getElementById('half-day-rate').value) || 50000;
-            salaryConfig.sundayMultiplier = parseFloat(document.getElementById('sunday-multiplier').value) || 2;
-            
-            localStorage.setItem('absensi_salary_config', JSON.stringify(salaryConfig));
-            loadAttendanceData();
-            showNotification('Perhitungan gaji diperbarui!', 'success');
-        });
+        if (overtimeForm) {
+            overtimeForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if (!currentUser) {
+                    showNotification('Login sebagai admin dulu!', 'error');
+                    return;
+                }
+                
+                const date = overtimeDateInput ? overtimeDateInput.value : formatDateForInput(new Date());
+                const overtimeHours = document.getElementById('overtime-hours')?.value || 0;
+                const sundayBonus = document.getElementById('sunday-bonus')?.value || 0;
+                
+                if (parseFloat(overtimeHours) <= 0 && parseFloat(sundayBonus) <= 0) {
+                    showNotification('Isi jam lembur atau bonus minggu!', 'error');
+                    return;
+                }
+                
+                const dateObj = new Date(date);
+                const formattedDate = formatDate(dateObj);
+                
+                let message = `Simpan data untuk tanggal ${formattedDate}?\n`;
+                if (overtimeHours > 0) message += `- Lembur: ${overtimeHours} jam\n`;
+                if (sundayBonus > 0) message += `- Bonus Minggu: Rp ${parseFloat(sundayBonus).toLocaleString('id-ID')}`;
+                
+                if (confirm(message)) {
+                    const button = this.querySelector('button');
+                    const done = showLoading(button);
+                    await saveAttendance(date, undefined, undefined, parseFloat(overtimeHours), parseFloat(sundayBonus));
+                    done();
+                    
+                    const overtimeHoursEl = document.getElementById('overtime-hours');
+                    const sundayBonusEl = document.getElementById('sunday-bonus');
+                    
+                    if (overtimeHoursEl) overtimeHoursEl.value = '';
+                    if (sundayBonusEl) sundayBonusEl.value = '';
+                    if (overtimeDateInput) overtimeDateInput.value = formatDateForInput(new Date());
+                }
+            });
+        }
+
+        if (calculateSalaryBtn) {
+            calculateSalaryBtn.addEventListener('click', function() {
+                const dailySalaryEl = document.getElementById('daily-salary');
+                const overtimeRateEl = document.getElementById('overtime-rate');
+                const halfDayRateEl = document.getElementById('half-day-rate');
+                const sundayMultiplierEl = document.getElementById('sunday-multiplier');
+                
+                if (dailySalaryEl) salaryConfig.dailySalary = parseInt(dailySalaryEl.value) || 100000;
+                if (overtimeRateEl) salaryConfig.overtimeRate = parseInt(overtimeRateEl.value) || 20000;
+                if (halfDayRateEl) salaryConfig.halfDayRate = parseInt(halfDayRateEl.value) || 50000;
+                if (sundayMultiplierEl) salaryConfig.sundayMultiplier = parseFloat(sundayMultiplierEl.value) || 2;
+                
+                localStorage.setItem('absensi_salary_config', JSON.stringify(salaryConfig));
+                loadAttendanceData();
+                showNotification('Perhitungan gaji diperbarui!', 'success');
+            });
+        }
 
         // ========== JALANKAN APLIKASI ==========
         console.log("📱 Aplikasi Absensi Kerja dimuat");
+        
+        // Inisialisasi Firebase pertama kali
+        initializeFirebase();
         
         const now = new Date();
         const currentMonth = now.toISOString().slice(0, 7);
@@ -1912,9 +2062,19 @@
         if (publicMonthSelector) publicMonthSelector.value = currentMonth;
         selectedMonth = currentMonth;
 
+        // Coba login otomatis jika sudah login sebelumnya
         if (localStorage.getItem('absensi_logged_in') === 'true') {
-            document.getElementById('password').value = 'admin123';
-            document.getElementById('login-form').dispatchEvent(new Event('submit'));
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.value = 'admin123';
+                // Tunggu Firebase siap sebelum login
+                setTimeout(() => {
+                    const loginForm = document.getElementById('login-form');
+                    if (loginForm) {
+                        loginForm.dispatchEvent(new Event('submit'));
+                    }
+                }, 1000);
+            }
         }
 
         window.addEventListener('error', function(e) {
