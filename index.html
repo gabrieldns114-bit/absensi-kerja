@@ -115,8 +115,64 @@
             background: linear-gradient(135deg, var(--secondary-color), #2980b9);
         }
         
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #dee2e6;
+        }
+        
+        table th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        table td {
+            vertical-align: middle;
+        }
+        
+        .logout-btn {
+            cursor: pointer;
+        }
+        
         .hidden {
             display: none;
+        }
+        
+        .public-view {
+            padding: 20px;
+        }
+        
+        .month-selector {
+            max-width: 250px;
+        }
+        
+        .salary-summary {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .firebase-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .firebase-connected {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .firebase-disconnected {
+            background-color: #dc3545;
+            color: white;
         }
         
         .notification-alert {
@@ -154,9 +210,82 @@
             font-size: 12px;
             font-weight: bold;
         }
+        
+        .action-buttons .btn {
+            margin: 2px;
+            padding: 5px 10px;
+        }
+        
+        .total-row {
+            background-color: #f8f9fa !important;
+            font-weight: bold;
+        }
+        
+        .total-row td {
+            border-top: 2px solid #dee2e6 !important;
+        }
+        
+        .date-range-filter {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .date-range-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .date-range-inputs .form-control {
+            flex: 1;
+        }
+        
+        .filter-toggle {
+            cursor: pointer;
+            color: var(--secondary-color);
+            font-size: 14px;
+        }
+        
+        .filter-toggle:hover {
+            text-decoration: underline;
+        }
+        
+        .filter-badge {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        
+        .quick-date-btn {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        
+        .date-presets {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .date-preset-btn {
+            margin: 3px;
+            padding: 5px 10px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
+    <!-- Status Firebase -->
+    <div id="firebase-status" class="firebase-status firebase-disconnected">
+        <i class="fas fa-circle"></i> <span id="firebase-status-text">Menyiapkan Firebase...</span>
+    </div>
+
     <!-- Halaman Login -->
     <div id="login-page" class="login-container">
         <h2 class="text-center mb-4"><i class="fas fa-fingerprint"></i> Login Absensi</h2>
@@ -165,7 +294,7 @@
             <div class="mb-3">
                 <label for="password" class="form-label">Password Admin</label>
                 <input type="password" class="form-control" id="password" placeholder="Masukkan password admin" required>
-                <div class="form-text">Default password: <code>admin123</code></div>
+                <div class="form-text">Default password: <code>admin123</code>. Hanya Anda yang bisa mengubah data.</div>
             </div>
             <button type="submit" class="btn btn-primary w-100">
                 <i class="fas fa-sign-in-alt"></i> Login sebagai Admin
@@ -176,20 +305,99 @@
                 <i class="fas fa-eye"></i> Lihat Data (Mode Tamu)
             </button>
         </div>
+        <div class="mt-4">
+            <div class="alert alert-success">
+                <h6><i class="fas fa-check-circle"></i> <strong>100% GRATIS - Berhasil Terhubung!</strong></h6>
+                <p class="mb-1">✔ Project: <strong>absensi-kerja-gratis</strong></p>
+                <p class="mb-1">✔ Database: Realtime Database (Gratis)</p>
+                <p class="mb-1">✔ Status: <span id="login-status">Menyiapkan...</span></p>
+            </div>
+        </div>
     </div>
 
     <!-- Aplikasi Utama (Tampilan setelah login) -->
     <div id="app-container" class="hidden">
-        <nav class="navbar navbar-dark" style="background-color: var(--primary-color);">
+        <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--primary-color);">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#"><i class="fas fa-calendar-check"></i> Absensi Kerja</a>
-                <button class="btn btn-outline-light" id="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
+                <a class="navbar-brand" href="#"><i class="fas fa-calendar-check"></i> Absensi Kerja - Mode Admin</a>
+                <div class="d-flex">
+                    <span class="navbar-text me-3" id="current-date"></span>
+                    <button class="btn btn-outline-light logout-btn" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
             </div>
         </nav>
 
-        <div class="container mt-4">
+        <div class="container-fluid mt-4">
+            <!-- Filter Tanggal -->
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <h3><i class="fas fa-tachometer-alt"></i> Dashboard Absensi</h3>
+                    <p id="greeting-text"></p>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-filter"></i></span>
+                        <select class="form-select" id="filter-type">
+                            <option value="month">Filter Bulan</option>
+                            <option value="range">Filter Rentang Tanggal</option>
+                            <option value="all">Tampilkan Semua</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bulan (Default) -->
+            <div class="row mb-3" id="month-filter-section">
+                <div class="col-md-12">
+                    <div class="date-range-filter">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="mb-0"><i class="fas fa-calendar-alt"></i> Filter Bulan</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="month" class="form-control" id="month-selector" value="">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-secondary w-100" id="reset-month-filter">
+                                    <i class="fas fa-redo"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Rentang Tanggal (Tersembunyi Awalnya) -->
+            <div class="row mb-3 hidden" id="date-range-filter-section">
+                <div class="col-md-12">
+                    <div class="date-range-filter">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="mb-0"><i class="fas fa-calendar-week"></i> Rentang Tanggal</h6>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Dari Tanggal</label>
+                                <input type="date" class="form-control" id="date-from">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Sampai Tanggal</label>
+                                <input type="date" class="form-control" id="date-to">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary w-100" id="apply-date-range">
+                                    <i class="fas fa-check"></i> Terapkan
+                                </button>
+                                <button class="btn btn-secondary w-100 mt-2" id="reset-date-range">
+                                    <i class="fas fa-redo"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Statistik -->
             <div class="row">
                 <div class="col-md-3">
@@ -218,40 +426,94 @@
                 </div>
             </div>
 
-            <!-- Input Absensi -->
+            <!-- Info Filter Aktif -->
+            <div class="row mt-3 hidden" id="active-filter-info">
+                <div class="col-md-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Filter Aktif:</strong> 
+                        <span id="filter-info-text"></span>
+                        <button class="btn btn-sm btn-outline-info float-end" id="clear-all-filter">
+                            <i class="fas fa-times"></i> Hapus Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tombol Absensi dengan Pilihan Tanggal -->
             <div class="row mt-4">
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">
                             <i class="fas fa-calendar-day"></i> Input Absensi
+                            <span class="float-end">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="attendanceDateType" id="todayDate" value="today" checked>
+                                    <label class="form-check-label" for="todayDate">Hari Ini</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="attendanceDateType" id="otherDate" value="other">
+                                    <label class="form-check-label" for="otherDate">Tanggal Lain</label>
+                                </div>
+                            </span>
                         </div>
                         <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
+                            <!-- Pilih Tanggal (Tersembunyi Awalnya) -->
+                            <div class="row mb-3 hidden" id="date-selector-section">
+                                <div class="col-md-12">
                                     <label for="attendance-date" class="form-label">Pilih Tanggal</label>
-                                    <input type="date" class="form-control" id="attendance-date" value="">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Pilih Status</label>
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-success flex-grow-1 attendance-btn" data-type="full">
-                                            <i class="fas fa-check-circle"></i> Full Day
+                                    <div class="input-group mb-3">
+                                        <input type="date" class="form-control" id="attendance-date">
+                                        <button class="btn btn-outline-secondary" type="button" id="quick-yesterday">
+                                            <i class="fas fa-calendar-day"></i> Kemarin
                                         </button>
-                                        <button class="btn btn-warning flex-grow-1 attendance-btn" data-type="half">
-                                            <i class="fas fa-clock"></i> Setengah
+                                        <button class="btn btn-outline-secondary" type="button" id="quick-last-week">
+                                            <i class="fas fa-calendar-week"></i> 7 Hari Lalu
                                         </button>
-                                        <button class="btn btn-danger flex-grow-1 attendance-btn" data-type="absent">
-                                            <i class="fas fa-times-circle"></i> Absen
-                                        </button>
+                                    </div>
+                                    
+                                    <!-- Preset Tanggal Cepat -->
+                                    <div class="date-presets">
+                                        <p class="small mb-2"><i class="fas fa-bolt"></i> Pilih Cepat:</p>
+                                        <div class="d-flex flex-wrap">
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-1">Kemarin</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-2">2 Hari Lalu</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-3">3 Hari Lalu</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-4">4 Hari Lalu</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-5">5 Hari Lalu</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-7">1 Minggu Lalu</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-14">2 Minggu Lalu</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary date-preset-btn" data-days="-30">1 Bulan Lalu</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Tombol Absensi -->
+                            <div class="row" id="attendance-buttons">
+                                <div class="col-md-4">
+                                    <button class="btn btn-success attendance-btn" data-type="full">
+                                        <i class="fas fa-check-circle"></i> Berangkat Kerja (Full)
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-warning attendance-btn" data-type="half">
+                                        <i class="fas fa-clock"></i> Setengah Hari
+                                    </button>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-danger attendance-btn" data-type="absent">
+                                        <i class="fas fa-times-circle"></i> Tidak Masuk
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mt-3" id="today-status"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Input Kasbon & Lembur -->
+            <!-- Input Data Kasbon, Lembur & Bonus -->
             <div class="row mt-3">
                 <div class="col-md-6">
                     <div class="card">
@@ -259,20 +521,32 @@
                             <i class="fas fa-hand-holding-usd"></i> Kasbon
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label for="kasbon-date" class="form-label">Tanggal</label>
-                                <input type="date" class="form-control" id="kasbon-date" value="">
-                            </div>
-                            <div class="mb-3">
-                                <label for="kasbon-amount" class="form-label">Jumlah Kasbon</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" class="form-control" id="kasbon-amount" placeholder="500000">
+                            <form id="kasbon-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="kasbon-date" class="form-label">Tanggal Kasbon</label>
+                                        <input type="date" class="form-control" id="kasbon-date">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="kasbon-amount" class="form-label">Jumlah Kasbon</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" class="form-control" id="kasbon-amount" placeholder="500000" required>
+                                        </div>
+                                    </div>
                                 </div>
+                                <div class="mb-3">
+                                    <label for="kasbon-note" class="form-label">Keterangan (Opsional)</label>
+                                    <input type="text" class="form-control" id="kasbon-note" placeholder="Untuk kebutuhan keluarga">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus-circle"></i> Tambah Kasbon
+                                </button>
+                            </form>
+                            <div class="mt-3">
+                                <h6>Total Kasbon: <span id="total-kasbon" class="text-danger">Rp 0</span></h6>
+                                <small class="text-muted" id="kasbon-period">(Dalam periode yang difilter)</small>
                             </div>
-                            <button class="btn btn-primary w-100" id="save-kasbon">
-                                <i class="fas fa-save"></i> Simpan Kasbon
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -280,34 +554,103 @@
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-coins"></i> Lembur
+                            <i class="fas fa-coins"></i> Lembur & Bonus Minggu
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label for="overtime-date" class="form-label">Tanggal</label>
-                                <input type="date" class="form-control" id="overtime-date" value="">
-                            </div>
-                            <div class="mb-3">
-                                <label for="overtime-hours" class="form-label">Jam Lembur</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" id="overtime-hours" placeholder="2" step="0.5">
-                                    <span class="input-group-text">jam</span>
+                            <form id="overtime-form">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="overtime-date" class="form-label">Tanggal</label>
+                                        <input type="date" class="form-control" id="overtime-date">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="overtime-hours" class="form-label">Jam Lembur</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="overtime-hours" placeholder="2" step="0.5" min="0">
+                                            <span class="input-group-text">jam</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="sunday-bonus" class="form-label">Bonus Hari Minggu</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" class="form-control" id="sunday-bonus" placeholder="100000" min="0">
+                                        </div>
+                                        <div class="form-text">Isi hanya jika tanggal yang dipilih adalah hari Minggu</div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-save"></i> Simpan Data
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kalkulasi Gaji -->
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <div class="card salary-summary">
+                        <div class="card-header bg-transparent border-0">
+                            <h4 class="mb-0"><i class="fas fa-calculator"></i> Kalkulasi Gaji</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="daily-salary" class="form-label">Gaji Harian</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" class="form-control" id="daily-salary" value="100000">
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="overtime-rate" class="form-label">Rate Lembur per Jam</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" class="form-control" id="overtime-rate" value="20000">
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="half-day-rate" class="form-label">Gaji Setengah Hari</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">Rp</span>
+                                        <input type="number" class="form-control" id="half-day-rate" value="50000">
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="sunday-multiplier" class="form-label">Multiplier Hari Minggu</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="sunday-multiplier" value="2" step="0.1" min="1">
+                                        <span class="input-group-text">x</span>
+                                    </div>
                                 </div>
                             </div>
-                            <button class="btn btn-primary w-100" id="save-overtime">
-                                <i class="fas fa-save"></i> Simpan Lembur
+                            <button class="btn btn-success mt-2" id="calculate-salary">
+                                <i class="fas fa-calculator"></i> Hitung Ulang Gaji
                             </button>
+                            <div class="mt-3 alert alert-info">
+                                <i class="fas fa-info-circle"></i> Ganti nilai di atas sesuai dengan rate gaji Anda, lalu klik "Hitung Ulang Gaji".
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Tabel Data -->
-            <div class="row mt-4">
+            <div class="row mt-3">
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">
-                            <i class="fas fa-history"></i> Riwayat Absensi
+                            <i class="fas fa-history"></i> Riwayat Absensi & Keuangan
+                            <span class="float-end">
+                                <small class="text-muted">
+                                    Total Data: <span id="total-records">0</span> 
+                                    <span class="filter-badge" id="filter-badge"></span>
+                                </small>
+                            </span>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
@@ -315,21 +658,35 @@
                                     <thead>
                                         <tr>
                                             <th>Tanggal</th>
+                                            <th>Hari</th>
                                             <th>Status</th>
                                             <th>Kasbon</th>
-                                            <th>Lembur</th>
-                                            <th>Gaji</th>
+                                            <th>Lembur (jam)</th>
+                                            <th>Bonus Minggu</th>
+                                            <th>Gaji Harian</th>
+                                            <th>Total</th>
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="attendance-table">
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">
+                                        <tr id="no-data">
+                                            <td colspan="9" class="text-center text-muted py-4">
                                                 <i class="fas fa-database fa-2x mb-3"></i><br>
-                                                Belum ada data absensi.
+                                                Belum ada data absensi. Klik tombol di atas untuk mencatat absensi.
                                             </td>
                                         </tr>
                                     </tbody>
+                                    <tfoot id="table-footer" class="hidden">
+                                        <tr class="total-row">
+                                            <td colspan="3"><strong>Total</strong></td>
+                                            <td><strong id="footer-kasbon">Rp 0</strong></td>
+                                            <td><strong id="footer-overtime">0 jam</strong></td>
+                                            <td><strong id="footer-bonus">Rp 0</strong></td>
+                                            <td><strong id="footer-gaji">Rp 0</strong></td>
+                                            <td><strong id="footer-total">Rp 0</strong></td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -339,43 +696,179 @@
         </div>
     </div>
 
-    <!-- Tampilan Publik -->
-    <div id="public-view-container" class="hidden container mt-4">
-        <nav class="navbar navbar-dark" style="background-color: var(--primary-color);">
+    <!-- Tampilan Publik (tanpa login) -->
+    <div id="public-view-container" class="hidden public-view">
+        <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--primary-color);">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#"><i class="fas fa-calendar-check"></i> Absensi Kerja (View Only)</a>
-                <button class="btn btn-outline-light" id="back-to-login">
-                    <i class="fas fa-sign-in-alt"></i> Login Admin
-                </button>
+                <a class="navbar-brand" href="#"><i class="fas fa-calendar-check"></i> Absensi Kerja (Tampilan Publik)</a>
+                <div class="d-flex">
+                    <button class="btn btn-outline-light" id="back-to-login">
+                        <i class="fas fa-sign-in-alt"></i> Kembali ke Login
+                    </button>
+                </div>
             </div>
         </nav>
         
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Tanggal</th>
-                                        <th>Status</th>
-                                        <th>Kasbon</th>
-                                        <th>Lembur</th>
-                                        <th>Gaji</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="public-attendance-table">
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">
-                                            <i class="fas fa-database fa-2x mb-3"></i><br>
-                                            Belum ada data absensi.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+        <div class="container-fluid mt-4">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> <strong>Mode Tampilan Publik:</strong> Data hanya dapat dilihat, tidak dapat diubah.
+            </div>
+            
+            <!-- Filter untuk Tampilan Publik -->
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <h3><i class="fas fa-tachometer-alt"></i> Dashboard Absensi</h3>
+                    <p>Data absensi dan keuangan kerja</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-filter"></i></span>
+                        <select class="form-select" id="public-filter-type">
+                            <option value="month">Filter Bulan</option>
+                            <option value="range">Filter Rentang Tanggal</option>
+                            <option value="all">Tampilkan Semua</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bulan (Publik) -->
+            <div class="row mb-3" id="public-month-filter-section">
+                <div class="col-md-12">
+                    <div class="date-range-filter">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="mb-0"><i class="fas fa-calendar-alt"></i> Filter Bulan</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="month" class="form-control" id="public-month-selector" value="">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-secondary w-100" id="public-reset-month-filter">
+                                    <i class="fas fa-redo"></i> Reset
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Filter Rentang Tanggal (Publik) -->
+            <div class="row mb-3 hidden" id="public-date-range-filter-section">
+                <div class="col-md-12">
+                    <div class="date-range-filter">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h6 class="mb-0"><i class="fas fa-calendar-week"></i> Rentang Tanggal</h6>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Dari Tanggal</label>
+                                <input type="date" class="form-control" id="public-date-from">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">Sampai Tanggal</label>
+                                <input type="date" class="form-control" id="public-date-to">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary w-100" id="public-apply-date-range">
+                                    <i class="fas fa-check"></i> Terapkan
+                                </button>
+                                <button class="btn btn-secondary w-100 mt-2" id="public-reset-date-range">
+                                    <i class="fas fa-redo"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistik Publik -->
+            <div class="row" id="public-stats">
+                <!-- Statistik akan dimuat di sini -->
+            </div>
+            
+            <!-- Info Filter Aktif (Publik) -->
+            <div class="row mt-3 hidden" id="public-active-filter-info">
+                <div class="col-md-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Filter Aktif:</strong> 
+                        <span id="public-filter-info-text"></span>
+                        <button class="btn btn-sm btn-outline-info float-end" id="public-clear-all-filter">
+                            <i class="fas fa-times"></i> Hapus Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tabel Data Publik -->
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-history"></i> Riwayat Absensi & Keuangan
+                            <span class="float-end">
+                                <small class="text-muted">
+                                    Total Data: <span id="public-total-records">0</span>
+                                </small>
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Tanggal</th>
+                                            <th>Hari</th>
+                                            <th>Status</th>
+                                            <th>Kasbon</th>
+                                            <th>Lembur (jam)</th>
+                                            <th>Bonus Minggu</th>
+                                            <th>Gaji Harian</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="public-attendance-table">
+                                        <tr id="public-no-data">
+                                            <td colspan="8" class="text-center text-muted py-4">
+                                                <i class="fas fa-database fa-2x mb-3"></i><br>
+                                                Belum ada data absensi.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot id="public-table-footer" class="hidden">
+                                        <tr class="total-row">
+                                            <td colspan="3"><strong>Total</strong></td>
+                                            <td><strong id="public-footer-kasbon">Rp 0</strong></td>
+                                            <td><strong id="public-footer-overtime">0 jam</strong></td>
+                                            <td><strong id="public-footer-bonus">Rp 0</strong></td>
+                                            <td><strong id="public-footer-gaji">Rp 0</strong></td>
+                                            <td><strong id="public-footer-total">Rp 0</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Konfirmasi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirm-message"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="confirm-button">Ya, Lanjutkan</button>
                 </div>
             </div>
         </div>
@@ -396,22 +889,158 @@
 
         const APP_PASSWORD = "admin123";
 
-        // ========== INISIALISASI FIREBASE ==========
-        let database;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            database = firebase.database();
-            console.log("✅ Firebase berhasil diinisialisasi");
-        } catch (error) {
-            console.error("❌ Error Firebase:", error);
-        }
-
         // ========== VARIABEL GLOBAL ==========
         let currentUser = null;
         let attendanceData = [];
+        let salaryConfig = {
+            dailySalary: 100000,
+            overtimeRate: 20000,
+            halfDayRate: 50000,
+            sundayMultiplier: 2
+        };
+        let database = null;
+        
+        // Variabel filter
+        let filterType = 'month'; // 'month', 'range', 'all'
+        let selectedMonth = '';
+        let dateFrom = '';
+        let dateTo = '';
+
+        // ========== ELEMEN DOM ==========
+        const loginPage = document.getElementById('login-page');
+        const appContainer = document.getElementById('app-container');
+        const publicViewContainer = document.getElementById('public-view-container');
+        const firebaseStatus = document.getElementById('firebase-status');
+        const firebaseStatusText = document.getElementById('firebase-status-text');
+        const loginForm = document.getElementById('login-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const publicViewBtn = document.getElementById('public-view-btn');
+        const backToLoginBtn = document.getElementById('back-to-login');
+        const todayStatus = document.getElementById('today-status');
+        const kasbonForm = document.getElementById('kasbon-form');
+        const overtimeForm = document.getElementById('overtime-form');
+        const calculateSalaryBtn = document.getElementById('calculate-salary');
+        const attendanceTable = document.getElementById('attendance-table');
+        const publicAttendanceTable = document.getElementById('public-attendance-table');
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+        
+        // Elemen filter
+        const filterTypeSelect = document.getElementById('filter-type');
+        const monthFilterSection = document.getElementById('month-filter-section');
+        const dateRangeFilterSection = document.getElementById('date-range-filter-section');
+        const monthSelector = document.getElementById('month-selector');
+        const dateFromInput = document.getElementById('date-from');
+        const dateToInput = document.getElementById('date-to');
+        const applyDateRangeBtn = document.getElementById('apply-date-range');
+        const resetDateRangeBtn = document.getElementById('reset-date-range');
+        const resetMonthFilterBtn = document.getElementById('reset-month-filter');
+        const activeFilterInfo = document.getElementById('active-filter-info');
+        const filterInfoText = document.getElementById('filter-info-text');
+        const clearAllFilterBtn = document.getElementById('clear-all-filter');
+        const filterBadge = document.getElementById('filter-badge');
+        const totalRecordsSpan = document.getElementById('total-records');
+        
+        // Elemen input tanggal manual
+        const todayDateRadio = document.getElementById('todayDate');
+        const otherDateRadio = document.getElementById('otherDate');
+        const dateSelectorSection = document.getElementById('date-selector-section');
+        const attendanceDateInput = document.getElementById('attendance-date');
+        const quickYesterdayBtn = document.getElementById('quick-yesterday');
+        const quickLastWeekBtn = document.getElementById('quick-last-week');
+        const kasbonDateInput = document.getElementById('kasbon-date');
+        const overtimeDateInput = document.getElementById('overtime-date');
+        
+        // Elemen tabel footer
+        const tableFooter = document.getElementById('table-footer');
+        const footerKasbon = document.getElementById('footer-kasbon');
+        const footerOvertime = document.getElementById('footer-overtime');
+        const footerBonus = document.getElementById('footer-bonus');
+        const footerGaji = document.getElementById('footer-gaji');
+        const footerTotal = document.getElementById('footer-total');
+        
+        // Elemen filter publik
+        const publicFilterTypeSelect = document.getElementById('public-filter-type');
+        const publicMonthFilterSection = document.getElementById('public-month-filter-section');
+        const publicDateRangeFilterSection = document.getElementById('public-date-range-filter-section');
+        const publicMonthSelector = document.getElementById('public-month-selector');
+        const publicDateFromInput = document.getElementById('public-date-from');
+        const publicDateToInput = document.getElementById('public-date-to');
+        const publicApplyDateRangeBtn = document.getElementById('public-apply-date-range');
+        const publicResetDateRangeBtn = document.getElementById('public-reset-date-range');
+        const publicResetMonthFilterBtn = document.getElementById('public-reset-month-filter');
+        const publicActiveFilterInfo = document.getElementById('public-active-filter-info');
+        const publicFilterInfoText = document.getElementById('public-filter-info-text');
+        const publicClearAllFilterBtn = document.getElementById('public-clear-all-filter');
+        const publicTotalRecordsSpan = document.getElementById('public-total-records');
+        const publicTableFooter = document.getElementById('public-table-footer');
+        const publicFooterKasbon = document.getElementById('public-footer-kasbon');
+        const publicFooterOvertime = document.getElementById('public-footer-overtime');
+        const publicFooterBonus = document.getElementById('public-footer-bonus');
+        const publicFooterGaji = document.getElementById('public-footer-gaji');
+        const publicFooterTotal = document.getElementById('public-footer-total');
+
+        // ========== INISIALISASI FIREBASE ==========
+        function initializeFirebase() {
+            try {
+                // Cek apakah Firebase sudah diinisialisasi
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                database = firebase.database();
+                updateFirebaseStatus("connected", "Firebase Terhubung");
+                document.getElementById('login-status').textContent = "Terhubung ke Firebase";
+                document.getElementById('login-status').className = "text-success";
+                console.log("✅ Firebase berhasil diinisialisasi");
+                
+                // Test koneksi ke database
+                database.ref('.info/connected').on('value', function(snapshot) {
+                    if (snapshot.val() === true) {
+                        console.log("✅ Terhubung ke Realtime Database");
+                    } else {
+                        console.log("❌ Terputus dari Realtime Database");
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Error Firebase:", error);
+                updateFirebaseStatus("disconnected", "Firebase Error: " + error.message);
+                document.getElementById('login-status').textContent = "Error: " + error.message;
+                document.getElementById('login-status').className = "text-danger";
+                showNotification("Firebase Error: " + error.message, "error", 10000);
+            }
+        }
 
         // ========== FUNGSI UTILITAS ==========
-        function showNotification(message, type = 'info') {
+        function updateFirebaseStatus(status, text) {
+            if (firebaseStatus && firebaseStatusText) {
+                firebaseStatus.className = `firebase-status firebase-${status}`;
+                firebaseStatusText.textContent = text;
+            }
+        }
+
+        function formatDate(date) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        function formatShortDate(date) {
+            const options = { weekday: 'short', day: 'numeric', month: 'short' };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        function formatCurrency(amount) {
+            if (!amount && amount !== 0) return '-';
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
+        }
+
+        function formatDateForInput(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function showNotification(message, type = 'info', duration = 3000) {
+            const existingAlert = document.querySelector('.notification-alert');
+            if (existingAlert) existingAlert.remove();
+            
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type} notification-alert`;
             alertDiv.innerHTML = `
@@ -423,147 +1052,363 @@
             
             setTimeout(() => {
                 if (alertDiv.parentElement) alertDiv.remove();
-            }, 3000);
+            }, duration);
         }
 
-        function formatCurrency(amount) {
-            if (!amount && amount !== 0) return '-';
-            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
+        function showLoading(element) {
+            if (element) {
+                const originalHTML = element.innerHTML;
+                element.innerHTML = '<span class="loading"></span> Memproses...';
+                element.disabled = true;
+                return () => {
+                    element.innerHTML = originalHTML;
+                    element.disabled = false;
+                };
+            }
+            return () => {};
         }
 
-        function formatDateForInput(date) {
-            const d = new Date(date);
-            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-            return d.toISOString().split('T')[0];
+        // ========== FUNGSI FILTER ==========
+        function setupDateFilters() {
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            // Set default values
+            if (monthSelector) monthSelector.value = formatDateForInput(today).slice(0, 7);
+            if (publicMonthSelector) publicMonthSelector.value = formatDateForInput(today).slice(0, 7);
+            selectedMonth = formatDateForInput(today).slice(0, 7);
+            
+            if (dateFromInput) dateFromInput.value = formatDateForInput(firstDayOfMonth);
+            if (dateToInput) dateToInput.value = formatDateForInput(today);
+            if (publicDateFromInput) publicDateFromInput.value = formatDateForInput(firstDayOfMonth);
+            if (publicDateToInput) publicDateToInput.value = formatDateForInput(today);
+            
+            // Event listeners untuk filter type
+            if (filterTypeSelect) {
+                filterTypeSelect.addEventListener('change', function() {
+                    filterType = this.value;
+                    updateFilterUI();
+                    loadAttendanceData();
+                });
+            }
+            
+            if (publicFilterTypeSelect) {
+                publicFilterTypeSelect.addEventListener('change', function() {
+                    filterType = this.value;
+                    updatePublicFilterUI();
+                    loadAttendanceData();
+                });
+            }
+            
+            // Event listeners untuk bulan
+            if (monthSelector) {
+                monthSelector.addEventListener('change', function() {
+                    selectedMonth = this.value;
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            if (publicMonthSelector) {
+                publicMonthSelector.addEventListener('change', function() {
+                    selectedMonth = this.value;
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            // Event listeners untuk rentang tanggal
+            if (applyDateRangeBtn) {
+                applyDateRangeBtn.addEventListener('click', function() {
+                    dateFrom = dateFromInput.value;
+                    dateTo = dateToInput.value;
+                    
+                    if (!dateFrom || !dateTo) {
+                        showNotification('Isi kedua tanggal!', 'error');
+                        return;
+                    }
+                    
+                    if (dateFrom > dateTo) {
+                        showNotification('Tanggal "Dari" harus sebelum tanggal "Sampai"', 'error');
+                        return;
+                    }
+                    
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            if (publicApplyDateRangeBtn) {
+                publicApplyDateRangeBtn.addEventListener('click', function() {
+                    dateFrom = publicDateFromInput.value;
+                    dateTo = publicDateToInput.value;
+                    
+                    if (!dateFrom || !dateTo) {
+                        showNotification('Isi kedua tanggal!', 'error');
+                        return;
+                    }
+                    
+                    if (dateFrom > dateTo) {
+                        showNotification('Tanggal "Dari" harus sebelum tanggal "Sampai"', 'error');
+                        return;
+                    }
+                    
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            // Reset buttons
+            if (resetMonthFilterBtn) {
+                resetMonthFilterBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    monthSelector.value = formatDateForInput(today).slice(0, 7);
+                    selectedMonth = formatDateForInput(today).slice(0, 7);
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            if (publicResetMonthFilterBtn) {
+                publicResetMonthFilterBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    publicMonthSelector.value = formatDateForInput(today).slice(0, 7);
+                    selectedMonth = formatDateForInput(today).slice(0, 7);
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            if (resetDateRangeBtn) {
+                resetDateRangeBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    dateFromInput.value = formatDateForInput(firstDayOfMonth);
+                    dateToInput.value = formatDateForInput(today);
+                    dateFrom = '';
+                    dateTo = '';
+                    updateFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            if (publicResetDateRangeBtn) {
+                publicResetDateRangeBtn.addEventListener('click', function() {
+                    const today = new Date();
+                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    publicDateFromInput.value = formatDateForInput(firstDayOfMonth);
+                    publicDateToInput.value = formatDateForInput(today);
+                    dateFrom = '';
+                    dateTo = '';
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                });
+            }
+            
+            // Clear all filter
+            if (clearAllFilterBtn) {
+                clearAllFilterBtn.addEventListener('click', function() {
+                    filterType = 'all';
+                    filterTypeSelect.value = 'all';
+                    selectedMonth = '';
+                    dateFrom = '';
+                    dateTo = '';
+                    updateFilterUI();
+                    updateFilterInfo();
+                    loadAttendanceData();
+                    showNotification('Semua filter dihapus', 'info');
+                });
+            }
+            
+            if (publicClearAllFilterBtn) {
+                publicClearAllFilterBtn.addEventListener('click', function() {
+                    filterType = 'all';
+                    publicFilterTypeSelect.value = 'all';
+                    selectedMonth = '';
+                    dateFrom = '';
+                    dateTo = '';
+                    updatePublicFilterUI();
+                    updatePublicFilterInfo();
+                    loadAttendanceData();
+                    showNotification('Semua filter dihapus', 'info');
+                });
+            }
         }
 
-        function formatDateDisplay(dateStr) {
-            const date = new Date(dateStr + 'T00:00:00');
-            return date.toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-            });
+        function updateFilterUI() {
+            if (monthFilterSection && dateRangeFilterSection) {
+                if (filterType === 'month') {
+                    monthFilterSection.classList.remove('hidden');
+                    dateRangeFilterSection.classList.add('hidden');
+                } else if (filterType === 'range') {
+                    monthFilterSection.classList.add('hidden');
+                    dateRangeFilterSection.classList.remove('hidden');
+                } else {
+                    monthFilterSection.classList.add('hidden');
+                    dateRangeFilterSection.classList.add('hidden');
+                }
+            }
         }
 
-        // ========== FUNGSI DATABASE SEDERHANA ==========
-        async function saveToDatabase(date, data) {
+        function updatePublicFilterUI() {
+            if (publicMonthFilterSection && publicDateRangeFilterSection) {
+                if (filterType === 'month') {
+                    publicMonthFilterSection.classList.remove('hidden');
+                    publicDateRangeFilterSection.classList.add('hidden');
+                } else if (filterType === 'range') {
+                    publicMonthFilterSection.classList.add('hidden');
+                    publicDateRangeFilterSection.classList.remove('hidden');
+                } else {
+                    publicMonthFilterSection.classList.add('hidden');
+                    publicDateRangeFilterSection.classList.add('hidden');
+                }
+            }
+        }
+
+        function updateFilterInfo() {
+            let info = '';
+            
+            if (filterType === 'month' && selectedMonth) {
+                const [year, month] = selectedMonth.split('-');
+                const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                                   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                info = `Bulan: ${monthNames[parseInt(month) - 1]} ${year}`;
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.remove('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = 'Bulan';
+                }
+            } else if (filterType === 'range' && dateFrom && dateTo) {
+                const fromDate = new Date(dateFrom);
+                const toDate = new Date(dateTo);
+                info = `Rentang: ${formatShortDate(fromDate)} - ${formatShortDate(toDate)}`;
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.remove('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = 'Rentang';
+                }
+            } else if (filterType === 'all') {
+                info = 'Semua Data';
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.remove('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = 'Semua';
+                }
+            } else {
+                if (activeFilterInfo) {
+                    activeFilterInfo.classList.add('hidden');
+                }
+                if (filterBadge) {
+                    filterBadge.textContent = '';
+                }
+            }
+            
+            if (filterInfoText) {
+                filterInfoText.textContent = info;
+            }
+        }
+
+        function updatePublicFilterInfo() {
+            let info = '';
+            
+            if (filterType === 'month' && selectedMonth) {
+                const [year, month] = selectedMonth.split('-');
+                const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                                   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                info = `Bulan: ${monthNames[parseInt(month) - 1]} ${year}`;
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.remove('hidden');
+                }
+            } else if (filterType === 'range' && dateFrom && dateTo) {
+                const fromDate = new Date(dateFrom);
+                const toDate = new Date(dateTo);
+                info = `Rentang: ${formatShortDate(fromDate)} - ${formatShortDate(toDate)}`;
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.remove('hidden');
+                }
+            } else if (filterType === 'all') {
+                info = 'Semua Data';
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.remove('hidden');
+                }
+            } else {
+                if (publicActiveFilterInfo) {
+                    publicActiveFilterInfo.classList.add('hidden');
+                }
+            }
+            
+            if (publicFilterInfoText) {
+                publicFilterInfoText.textContent = info;
+            }
+        }
+
+        function shouldIncludeDate(dateStr) {
+            if (filterType === 'all') return true;
+            
+            if (filterType === 'month' && selectedMonth) {
+                return dateStr.startsWith(selectedMonth);
+            }
+            
+            if (filterType === 'range' && dateFrom && dateTo) {
+                return dateStr >= dateFrom && dateStr <= dateTo;
+            }
+            
+            return true;
+        }
+
+        // ========== FUNGSI DATABASE ==========
+        async function saveAttendance(date, status, kasbon = 0, overtime = 0, sundayBonus = 0, note = '') {
+            if (!date) {
+                showNotification('Pilih tanggal terlebih dahulu!', 'error');
+                return false;
+            }
+            
+            if (!status && kasbon === 0 && overtime === 0 && sundayBonus === 0) {
+                showNotification('Pilih status absensi atau isi data lainnya!', 'error');
+                return false;
+            }
+            
+            const attendanceData = {
+                date,
+                status: status || (kasbon > 0 || overtime > 0 || sundayBonus > 0 ? 'full' : ''),
+                kasbon: parseFloat(kasbon) || 0,
+                overtime: parseFloat(overtime) || 0,
+                sundayBonus: parseFloat(sundayBonus) || 0,
+                note: note || '',
+                timestamp: new Date().toISOString()
+            };
+            
             try {
-                console.log("Menyimpan ke database:", { date, data });
+                console.log("Menyimpan data ke Firebase:", attendanceData);
                 
-                // Simpan ke Firebase
-                await database.ref('attendance/' + date).set(data);
+                // Gunakan set() bukan update() untuk overwrite data yang ada
+                await database.ref('attendance/' + date).set(attendanceData);
                 
-                console.log("✅ Data berhasil disimpan");
+                const dateObj = new Date(date);
+                const formattedDate = formatDate(dateObj);
+                showNotification(`Data berhasil disimpan untuk ${formattedDate}!`, 'success');
+                
+                loadAttendanceData();
                 return true;
             } catch (error) {
-                console.error("❌ Error menyimpan:", error);
+                console.error("Error menyimpan:", error);
                 showNotification('Gagal menyimpan: ' + error.message, 'error');
                 return false;
             }
         }
 
-        async function saveAttendance() {
-            const date = document.getElementById('attendance-date').value;
-            const status = document.querySelector('.attendance-btn.active')?.dataset.type;
-            
-            if (!date) {
-                showNotification('Pilih tanggal terlebih dahulu!', 'error');
-                return;
-            }
-            
-            if (!status) {
-                showNotification('Pilih status absensi!', 'error');
-                return;
-            }
-            
-            const data = {
-                date: date,
-                status: status,
-                timestamp: new Date().toISOString()
-            };
-            
-            const success = await saveToDatabase(date, data);
-            if (success) {
-                showNotification(`Absensi ${status} berhasil disimpan untuk ${formatDateDisplay(date)}`, 'success');
-                loadAttendanceData();
-                resetAttendanceForm();
-            }
-        }
-
-        async function saveKasbon() {
-            const date = document.getElementById('kasbon-date').value;
-            const amount = document.getElementById('kasbon-amount').value;
-            
-            if (!date || !amount) {
-                showNotification('Isi tanggal dan jumlah kasbon!', 'error');
-                return;
-            }
-            
-            // Ambil data yang ada
-            const existingData = await getAttendanceData(date);
-            
-            const data = {
-                ...existingData,
-                date: date,
-                kasbon: parseFloat(amount) || 0,
-                timestamp: new Date().toISOString()
-            };
-            
-            const success = await saveToDatabase(date, data);
-            if (success) {
-                showNotification(`Kasbon Rp ${parseFloat(amount).toLocaleString('id-ID')} berhasil disimpan`, 'success');
-                loadAttendanceData();
-                document.getElementById('kasbon-amount').value = '';
-            }
-        }
-
-        async function saveOvertime() {
-            const date = document.getElementById('overtime-date').value;
-            const hours = document.getElementById('overtime-hours').value;
-            
-            if (!date || !hours) {
-                showNotification('Isi tanggal dan jam lembur!', 'error');
-                return;
-            }
-            
-            // Ambil data yang ada
-            const existingData = await getAttendanceData(date);
-            
-            const data = {
-                ...existingData,
-                date: date,
-                overtime: parseFloat(hours) || 0,
-                timestamp: new Date().toISOString()
-            };
-            
-            const success = await saveToDatabase(date, data);
-            if (success) {
-                showNotification(`${hours} jam lembur berhasil disimpan`, 'success');
-                loadAttendanceData();
-                document.getElementById('overtime-hours').value = '';
-            }
-        }
-
-        async function getAttendanceData(date) {
-            try {
-                const snapshot = await database.ref('attendance/' + date).once('value');
-                return snapshot.val() || {};
-            } catch (error) {
-                console.error("Error mengambil data:", error);
-                return {};
-            }
-        }
-
         async function deleteAttendance(date) {
-            if (confirm(`Hapus data untuk tanggal ${formatDateDisplay(date)}?`)) {
-                try {
-                    await database.ref('attendance/' + date).remove();
-                    showNotification('Data berhasil dihapus', 'success');
-                    loadAttendanceData();
-                } catch (error) {
-                    showNotification('Gagal menghapus: ' + error.message, 'error');
-                }
+            try {
+                await database.ref('attendance/' + date).remove();
+                showNotification('Data berhasil dihapus!', 'success');
+                loadAttendanceData();
+                return true;
+            } catch (error) {
+                showNotification('Gagal menghapus: ' + error.message, 'error');
+                return false;
             }
         }
 
@@ -575,271 +1420,666 @@
                 
                 console.log("Data diterima:", allData);
                 
-                // Reset data
                 attendanceData = [];
+                let fullDayCount = 0;
+                let halfDayCount = 0;
+                let absentCount = 0;
+                let totalKasbon = 0;
+                let totalSalary = 0;
+                let totalOvertimeHours = 0;
+                let totalSundayBonus = 0;
+                let totalDailySalary = 0;
+                let recordCount = 0;
                 
-                // Konversi object ke array
-                Object.keys(allData).forEach(date => {
-                    attendanceData.push({
-                        date: date,
-                        ...allData[date]
+                // Reset tabel
+                if (attendanceTable) attendanceTable.innerHTML = '';
+                if (publicAttendanceTable) publicAttendanceTable.innerHTML = '';
+                
+                const dates = Object.keys(allData);
+                if (dates.length === 0) {
+                    if (attendanceTable) {
+                        attendanceTable.innerHTML = `
+                            <tr id="no-data">
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="fas fa-database fa-2x mb-3"></i><br>
+                                    Belum ada data absensi.
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    
+                    if (publicAttendanceTable) {
+                        publicAttendanceTable.innerHTML = `
+                            <tr id="public-no-data">
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="fas fa-database fa-2x mb-3"></i><br>
+                                    Belum ada data absensi.
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    
+                    updateStatistics(0, 0, 0, 0, 0);
+                    updateFooter(0, 0, 0, 0, 0, 0);
+                    checkTodayStatus();
+                    return;
+                }
+                
+                // Proses dan filter data
+                dates.forEach(date => {
+                    const data = allData[date];
+                    
+                    // Apply filter
+                    if (!shouldIncludeDate(date)) return;
+                    
+                    attendanceData.push({...data, date});
+                    recordCount++;
+                    
+                    // Hitung statistik
+                    if (data.status === 'full') fullDayCount++;
+                    else if (data.status === 'half') halfDayCount++;
+                    else if (data.status === 'absent') absentCount++;
+                    
+                    // Hitung total untuk footer
+                    totalKasbon += data.kasbon || 0;
+                    totalOvertimeHours += data.overtime || 0;
+                    totalSundayBonus += data.sundayBonus || 0;
+                    
+                    // Hitung gaji
+                    const salary = calculateSalary(data, salaryConfig);
+                    totalSalary += salary.total;
+                    totalDailySalary += salary.dailySalary;
+                    
+                    // Format tanggal
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const formattedDate = dateObj.toLocaleDateString('id-ID', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric' 
                     });
+                    const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'short' });
+                    
+                    // Label status
+                    let statusLabel = '';
+                    let statusClass = '';
+                    if (data.status === 'full') {
+                        statusLabel = 'Full Day';
+                        statusClass = 'bg-success';
+                    } else if (data.status === 'half') {
+                        statusLabel = 'Setengah Hari';
+                        statusClass = 'bg-warning';
+                    } else if (data.status === 'absent') {
+                        statusLabel = 'Tidak Masuk';
+                        statusClass = 'bg-danger';
+                    } else {
+                        statusLabel = 'Hanya Kasbon/Lembur';
+                        statusClass = 'bg-secondary';
+                    }
+                    
+                    // Baris untuk admin
+                    if (currentUser === 'admin' && attendanceTable) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${formattedDate}</td>
+                            <td>${dayName}</td>
+                            <td><span class="badge ${statusClass} badge-status">${statusLabel}</span></td>
+                            <td>${data.kasbon ? formatCurrency(data.kasbon) : '-'}</td>
+                            <td>${data.overtime || '-'}</td>
+                            <td>${data.sundayBonus ? formatCurrency(data.sundayBonus) : '-'}</td>
+                            <td>${formatCurrency(salary.dailySalary)}</td>
+                            <td><strong>${formatCurrency(salary.total)}</strong></td>
+                            <td class="action-buttons">
+                                <button class="btn btn-sm btn-danger delete-btn" data-date="${date}" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        attendanceTable.appendChild(row);
+                    }
+                    
+                    // Baris untuk publik
+                    if (publicAttendanceTable) {
+                        const publicRow = document.createElement('tr');
+                        publicRow.innerHTML = `
+                            <td>${formattedDate}</td>
+                            <td>${dayName}</td>
+                            <td><span class="badge ${statusClass} badge-status">${statusLabel}</span></td>
+                            <td>${data.kasbon ? formatCurrency(data.kasbon) : '-'}</td>
+                            <td>${data.overtime || '-'}</td>
+                            <td>${data.sundayBonus ? formatCurrency(data.sundayBonus) : '-'}</td>
+                            <td>${formatCurrency(salary.dailySalary)}</td>
+                            <td><strong>${formatCurrency(salary.total)}</strong></td>
+                        `;
+                        publicAttendanceTable.appendChild(publicRow);
+                    }
                 });
                 
-                // Urutkan berdasarkan tanggal (terbaru dulu)
+                // Urutkan berdasarkan tanggal (terbaru di atas)
                 attendanceData.sort((a, b) => new Date(b.date) - new Date(a.date));
                 
-                // Update tabel
-                updateAttendanceTable();
-                updateStatistics();
+                // Update statistik dan footer
+                updateStatistics(fullDayCount, halfDayCount, absentCount, totalSalary, totalKasbon);
+                updateFooter(recordCount, totalKasbon, totalOvertimeHours, totalSundayBonus, totalDailySalary, totalSalary);
+                updatePublicStats(fullDayCount, halfDayCount, absentCount, totalSalary, totalKasbon);
+                updatePublicFooter(recordCount, totalKasbon, totalOvertimeHours, totalSundayBonus, totalDailySalary, totalSalary);
+                checkTodayStatus();
+                
+                // Tambahkan event listener untuk tombol hapus
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const date = this.getAttribute('data-date');
+                        if (confirm(`Hapus data untuk tanggal ${date}?`)) {
+                            const done = showLoading(this);
+                            await deleteAttendance(date);
+                            done();
+                        }
+                    });
+                });
                 
             } catch (error) {
-                console.error("Error memuat data:", error);
-                showNotification('Gagal memuat data', 'error');
+                console.error('Gagal memuat data:', error);
+                showNotification('Gagal memuat data: ' + error.message, 'error');
             }
         }
 
-        function updateAttendanceTable() {
-            const table = document.getElementById('attendance-table');
-            const publicTable = document.getElementById('public-attendance-table');
+        function calculateSalary(attendance, config) {
+            let dailySalary = 0;
             
-            if (attendanceData.length === 0) {
-                const emptyRow = `
-                    <tr>
-                        <td colspan="${currentUser ? '6' : '5'}" class="text-center text-muted py-4">
-                            <i class="fas fa-database fa-2x mb-3"></i><br>
-                            Belum ada data absensi.
-                        </td>
-                    </tr>`;
-                
-                if (table) table.innerHTML = emptyRow;
-                if (publicTable) publicTable.innerHTML = emptyRow.replace('colspan="6"', 'colspan="5"');
-                return;
+            if (attendance.status === 'full') {
+                dailySalary = config.dailySalary;
+                const dayOfWeek = new Date(attendance.date + 'T00:00:00').getDay();
+                if (dayOfWeek === 0) dailySalary *= config.sundayMultiplier;
+            } else if (attendance.status === 'half') {
+                dailySalary = config.halfDayRate;
             }
             
-            let tableHTML = '';
-            let publicTableHTML = '';
+            const overtimePay = (attendance.overtime || 0) * config.overtimeRate;
+            const sundayBonus = attendance.sundayBonus || 0;
+            const total = dailySalary + overtimePay + sundayBonus - (attendance.kasbon || 0);
             
-            attendanceData.forEach(item => {
-                // Status badge
-                let statusBadge = '';
-                if (item.status === 'full') {
-                    statusBadge = '<span class="badge bg-success">Full Day</span>';
-                } else if (item.status === 'half') {
-                    statusBadge = '<span class="badge bg-warning">Setengah Hari</span>';
-                } else if (item.status === 'absent') {
-                    statusBadge = '<span class="badge bg-danger">Tidak Masuk</span>';
-                }
-                
-                // Hitung gaji sederhana
-                let dailySalary = 0;
-                if (item.status === 'full') dailySalary = 100000;
-                else if (item.status === 'half') dailySalary = 50000;
-                
-                const totalSalary = dailySalary - (item.kasbon || 0);
-                
-                // Row untuk admin
-                tableHTML += `
-                    <tr>
-                        <td>${formatDateDisplay(item.date)}</td>
-                        <td>${statusBadge}</td>
-                        <td>${item.kasbon ? formatCurrency(item.kasbon) : '-'}</td>
-                        <td>${item.overtime ? item.overtime + ' jam' : '-'}</td>
-                        <td>${formatCurrency(totalSalary)}</td>
-                        <td>
-                            <button class="btn btn-sm btn-danger" onclick="deleteAttendance('${item.date}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-                
-                // Row untuk publik
-                publicTableHTML += `
-                    <tr>
-                        <td>${formatDateDisplay(item.date)}</td>
-                        <td>${statusBadge}</td>
-                        <td>${item.kasbon ? formatCurrency(item.kasbon) : '-'}</td>
-                        <td>${item.overtime ? item.overtime + ' jam' : '-'}</td>
-                        <td>${formatCurrency(totalSalary)}</td>
-                    </tr>`;
-            });
-            
-            if (table) table.innerHTML = tableHTML;
-            if (publicTable) publicTable.innerHTML = publicTableHTML;
+            return { dailySalary, overtimePay, sundayBonus, kasbon: attendance.kasbon || 0, total };
         }
 
-        function updateStatistics() {
-            let fullDay = 0;
-            let halfDay = 0;
-            let absent = 0;
-            let totalSalary = 0;
+        function updateStatistics(fullDay, halfDay, absent, totalSalary, totalKasbon) {
+            const fullDayCountEl = document.getElementById('full-day-count');
+            const halfDayCountEl = document.getElementById('half-day-count');
+            const absentCountEl = document.getElementById('absent-count');
+            const totalSalaryEl = document.getElementById('total-salary');
+            const totalKasbonEl = document.getElementById('total-kasbon');
+            const kasbonPeriodEl = document.getElementById('kasbon-period');
             
-            attendanceData.forEach(item => {
-                if (item.status === 'full') fullDay++;
-                else if (item.status === 'half') halfDay++;
-                else if (item.status === 'absent') absent++;
-                
-                // Hitung gaji
-                let dailySalary = 0;
-                if (item.status === 'full') dailySalary = 100000;
-                else if (item.status === 'half') dailySalary = 50000;
-                
-                totalSalary += dailySalary - (item.kasbon || 0);
-            });
+            if (fullDayCountEl) fullDayCountEl.textContent = fullDay;
+            if (halfDayCountEl) halfDayCountEl.textContent = halfDay;
+            if (absentCountEl) absentCountEl.textContent = absent;
+            if (totalSalaryEl) totalSalaryEl.textContent = formatCurrency(totalSalary);
+            if (totalKasbonEl) totalKasbonEl.textContent = formatCurrency(totalKasbon);
             
-            document.getElementById('full-day-count').textContent = fullDay;
-            document.getElementById('half-day-count').textContent = halfDay;
-            document.getElementById('absent-count').textContent = absent;
-            document.getElementById('total-salary').textContent = formatCurrency(totalSalary);
+            // Update period info untuk kasbon
+            let periodText = '(Dalam periode yang difilter)';
+            if (filterType === 'month' && selectedMonth) {
+                const [year, month] = selectedMonth.split('-');
+                const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                                   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                periodText = `(Bulan ${monthNames[parseInt(month) - 1]} ${year})`;
+            } else if (filterType === 'range' && dateFrom && dateTo) {
+                const from = new Date(dateFrom);
+                const to = new Date(dateTo);
+                periodText = `(${formatShortDate(from)} - ${formatShortDate(to)})`;
+            } else if (filterType === 'all') {
+                periodText = '(Semua data)';
+            }
+            if (kasbonPeriodEl) kasbonPeriodEl.textContent = periodText;
         }
 
-        function resetAttendanceForm() {
-            document.getElementById('attendance-date').value = formatDateForInput(new Date());
-            document.querySelectorAll('.attendance-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+        function updatePublicStats(fullDay, halfDay, absent, totalSalary, totalKasbon) {
+            const publicStats = document.getElementById('public-stats');
+            if (publicStats) {
+                publicStats.innerHTML = `
+                    <div class="col-md-3">
+                        <div class="stat-card full-day">
+                            <h5><i class="fas fa-check-circle"></i> Full Day</h5>
+                            <h3>${fullDay}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card half-day">
+                            <h5><i class="fas fa-clock"></i> Setengah Hari</h5>
+                            <h3>${halfDay}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card absent">
+                            <h5><i class="fas fa-times-circle"></i> Tidak Masuk</h5>
+                            <h3>${absent}</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card income">
+                            <h5><i class="fas fa-money-bill-wave"></i> Total Gaji</h5>
+                            <h3>${formatCurrency(totalSalary)}</h3>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
-        // ========== SETUP TANGGAL DEFAULT ==========
-        function setupDefaultDates() {
+        function updateFooter(records, kasbon, overtimeHours, bonus, gaji, total) {
+            if (totalRecordsSpan) totalRecordsSpan.textContent = records;
+            
+            if (records > 0 && tableFooter) {
+                tableFooter.classList.remove('hidden');
+                if (footerKasbon) footerKasbon.textContent = formatCurrency(kasbon);
+                if (footerOvertime) footerOvertime.textContent = overtimeHours.toFixed(1) + ' jam';
+                if (footerBonus) footerBonus.textContent = formatCurrency(bonus);
+                if (footerGaji) footerGaji.textContent = formatCurrency(gaji);
+                if (footerTotal) footerTotal.textContent = formatCurrency(total);
+            } else if (tableFooter) {
+                tableFooter.classList.add('hidden');
+            }
+        }
+
+        function updatePublicFooter(records, kasbon, overtimeHours, bonus, gaji, total) {
+            if (publicTotalRecordsSpan) publicTotalRecordsSpan.textContent = records;
+            
+            if (records > 0 && publicTableFooter) {
+                publicTableFooter.classList.remove('hidden');
+                if (publicFooterKasbon) publicFooterKasbon.textContent = formatCurrency(kasbon);
+                if (publicFooterOvertime) publicFooterOvertime.textContent = overtimeHours.toFixed(1) + ' jam';
+                if (publicFooterBonus) publicFooterBonus.textContent = formatCurrency(bonus);
+                if (publicFooterGaji) publicFooterGaji.textContent = formatCurrency(gaji);
+                if (publicFooterTotal) publicFooterTotal.textContent = formatCurrency(total);
+            } else if (publicTableFooter) {
+                publicTableFooter.classList.add('hidden');
+            }
+        }
+
+        function checkTodayStatus() {
             const today = formatDateForInput(new Date());
+            const todayData = attendanceData.find(item => item.date === today);
             
-            // Set semua input tanggal ke hari ini
-            const dateInputs = [
-                'attendance-date',
-                'kasbon-date',
-                'overtime-date'
-            ];
-            
-            dateInputs.forEach(id => {
-                const input = document.getElementById(id);
-                if (input) {
-                    input.value = today;
-                    input.min = '2020-01-01';
-                    input.max = today;
+            if (todayStatus) {
+                todayStatus.innerHTML = '';
+                
+                if (todayData && todayData.status) {
+                    let statusText = '';
+                    let statusClass = '';
+                    
+                    if (todayData.status === 'full') {
+                        statusText = 'Anda sudah mencatat absensi FULL DAY hari ini.';
+                        statusClass = 'alert-success';
+                    } else if (todayData.status === 'half') {
+                        statusText = 'Anda sudah mencatat absensi SETENGAH HARI hari ini.';
+                        statusClass = 'alert-warning';
+                    } else if (todayData.status === 'absent') {
+                        statusText = 'Anda sudah mencatat TIDAK MASUK hari ini.';
+                        statusClass = 'alert-danger';
+                    }
+                    
+                    if (statusText) {
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert ${statusClass}`;
+                        alertDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${statusText}`;
+                        todayStatus.appendChild(alertDiv);
+                    }
                 }
-            });
+            }
         }
 
-        // ========== SETUP EVENT LISTENERS ==========
-        function setupEventListeners() {
-            // Tombol absensi
-            document.querySelectorAll('.attendance-btn[data-type]').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Hapus class active dari semua tombol
-                    document.querySelectorAll('.attendance-btn').forEach(b => {
-                        b.classList.remove('active');
-                    });
-                    // Tambah class active ke tombol yang diklik
-                    this.classList.add('active');
-                    
-                    // Simpan setelah 1 detik (bisa diubah)
-                    setTimeout(saveAttendance, 100);
+        // ========== FUNGSI INPUT TANGGAL ABSENSI ==========
+        function setupDateInputs() {
+            const today = new Date();
+            
+            // Set default tanggal untuk semua input
+            if (attendanceDateInput) attendanceDateInput.value = formatDateForInput(today);
+            if (kasbonDateInput) kasbonDateInput.value = formatDateForInput(today);
+            if (overtimeDateInput) overtimeDateInput.value = formatDateForInput(today);
+            
+            // Event listener untuk radio button
+            if (todayDateRadio && otherDateRadio) {
+                todayDateRadio.addEventListener('change', function() {
+                    if (this.checked && dateSelectorSection) {
+                        dateSelectorSection.classList.add('hidden');
+                    }
                 });
-            });
-            
-            // Tombol kasbon
-            const saveKasbonBtn = document.getElementById('save-kasbon');
-            if (saveKasbonBtn) {
-                saveKasbonBtn.addEventListener('click', saveKasbon);
-            }
-            
-            // Tombol lembur
-            const saveOvertimeBtn = document.getElementById('save-overtime');
-            if (saveOvertimeBtn) {
-                saveOvertimeBtn.addEventListener('click', saveOvertime);
-            }
-            
-            // Login form
-            const loginForm = document.getElementById('login-form');
-            if (loginForm) {
-                loginForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const password = document.getElementById('password').value;
-                    
-                    if (password === APP_PASSWORD) {
-                        currentUser = 'admin';
-                        document.getElementById('login-page').classList.add('hidden');
-                        document.getElementById('app-container').classList.remove('hidden');
-                        document.getElementById('public-view-container').classList.add('hidden');
-                        showNotification('Login berhasil!', 'success');
-                        loadAttendanceData();
-                    } else {
-                        showNotification('Password salah!', 'error');
+                
+                otherDateRadio.addEventListener('change', function() {
+                    if (this.checked && dateSelectorSection) {
+                        dateSelectorSection.classList.remove('hidden');
+                        if (attendanceDateInput) {
+                            attendanceDateInput.focus();
+                        }
                     }
                 });
             }
             
-            // Logout
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', function() {
-                    currentUser = null;
-                    document.getElementById('app-container').classList.add('hidden');
-                    document.getElementById('login-page').classList.remove('hidden');
-                    document.getElementById('password').value = '';
-                    showNotification('Anda telah logout', 'info');
+            // Tombol preset tanggal cepat
+            if (quickYesterdayBtn) {
+                quickYesterdayBtn.addEventListener('click', function() {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    if (attendanceDateInput) {
+                        attendanceDateInput.value = formatDateForInput(yesterday);
+                        showNotification(`Tanggal diatur ke: ${formatDate(yesterday)}`, 'info');
+                    }
                 });
             }
             
-            // Public view
-            const publicViewBtn = document.getElementById('public-view-btn');
-            if (publicViewBtn) {
-                publicViewBtn.addEventListener('click', function() {
-                    document.getElementById('login-page').classList.add('hidden');
-                    document.getElementById('public-view-container').classList.remove('hidden');
-                    document.getElementById('app-container').classList.add('hidden');
-                    currentUser = null;
-                    loadAttendanceData();
-                    showNotification('Mode view only', 'info');
+            if (quickLastWeekBtn) {
+                quickLastWeekBtn.addEventListener('click', function() {
+                    const lastWeek = new Date();
+                    lastWeek.setDate(lastWeek.getDate() - 7);
+                    if (attendanceDateInput) {
+                        attendanceDateInput.value = formatDateForInput(lastWeek);
+                        showNotification(`Tanggal diatur ke: ${formatDate(lastWeek)}`, 'info');
+                    }
                 });
             }
             
-            // Back to login
-            const backToLoginBtn = document.getElementById('back-to-login');
-            if (backToLoginBtn) {
-                backToLoginBtn.addEventListener('click', function() {
-                    document.getElementById('public-view-container').classList.add('hidden');
-                    document.getElementById('login-page').classList.remove('hidden');
+            // Tombol preset tanggal
+            document.querySelectorAll('.date-preset-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const daysOffset = parseInt(this.getAttribute('data-days'));
+                    const targetDate = new Date();
+                    targetDate.setDate(targetDate.getDate() + daysOffset);
+                    
+                    if (attendanceDateInput) {
+                        attendanceDateInput.value = formatDateForInput(targetDate);
+                        showNotification(`Tanggal diatur ke: ${formatDate(targetDate)}`, 'info');
+                    }
                 });
-            }
+            });
+            
+            // Setup tombol absensi
+            setupAttendanceButtons();
+        }
+
+        function setupAttendanceButtons() {
+            // Hapus event listener lama jika ada
+            const oldButtons = document.querySelectorAll('.attendance-btn');
+            oldButtons.forEach(btn => {
+                btn.replaceWith(btn.cloneNode(true));
+            });
+            
+            // Tambah event listener baru
+            document.querySelectorAll('.attendance-btn').forEach(button => {
+                button.addEventListener('click', async function() {
+                    if (!currentUser) {
+                        showNotification('Login sebagai admin dulu!', 'error');
+                        return;
+                    }
+                    
+                    const status = this.getAttribute('data-type');
+                    let selectedDate = '';
+                    let dateLabel = '';
+                    
+                    // Tentukan tanggal berdasarkan pilihan
+                    if (todayDateRadio && todayDateRadio.checked) {
+                        selectedDate = formatDateForInput(new Date());
+                        dateLabel = 'hari ini';
+                    } else if (otherDateRadio && otherDateRadio.checked) {
+                        selectedDate = attendanceDateInput ? attendanceDateInput.value : '';
+                        
+                        if (!selectedDate) {
+                            showNotification('Pilih tanggal terlebih dahulu!', 'error');
+                            return;
+                        }
+                        
+                        const dateObj = new Date(selectedDate);
+                        dateLabel = `tanggal ${formatDate(dateObj)}`;
+                    } else {
+                        // Default ke hari ini
+                        selectedDate = formatDateForInput(new Date());
+                        dateLabel = 'hari ini';
+                    }
+                    
+                    // Validasi tidak bisa input tanggal di masa depan
+                    const today = new Date();
+                    const selectedDateObj = new Date(selectedDate);
+                    today.setHours(0, 0, 0, 0);
+                    selectedDateObj.setHours(0, 0, 0, 0);
+                    
+                    if (selectedDateObj > today) {
+                        showNotification('Tidak bisa input absensi untuk tanggal di masa depan!', 'error');
+                        return;
+                    }
+                    
+                    // Konfirmasi
+                    if (confirm(`Simpan absensi ${status} untuk ${dateLabel}?`)) {
+                        const done = showLoading(this);
+                        await saveAttendance(selectedDate, status);
+                        done();
+                        
+                        // Reset ke hari ini setelah simpan
+                        if (todayDateRadio) todayDateRadio.checked = true;
+                        if (dateSelectorSection) dateSelectorSection.classList.add('hidden');
+                        if (attendanceDateInput) {
+                            attendanceDateInput.value = formatDateForInput(new Date());
+                        }
+                    }
+                });
+            });
         }
 
         // ========== INISIALISASI APLIKASI ==========
         function initializeApp() {
-            console.log("🚀 Memulai aplikasi...");
+            console.log("🚀 Menginisialisasi aplikasi...");
             
-            setupDefaultDates();
-            setupEventListeners();
+            const now = new Date();
+            const currentDateEl = document.getElementById('current-date');
+            if (currentDateEl) currentDateEl.textContent = formatDate(now);
             
-            // Load data jika sudah login
-            if (currentUser === 'admin') {
-                loadAttendanceData();
+            // Load konfigurasi gaji dari localStorage
+            const savedConfig = localStorage.getItem('absensi_salary_config');
+            if (savedConfig) {
+                try {
+                    salaryConfig = JSON.parse(savedConfig);
+                    const dailySalaryEl = document.getElementById('daily-salary');
+                    const overtimeRateEl = document.getElementById('overtime-rate');
+                    const halfDayRateEl = document.getElementById('half-day-rate');
+                    const sundayMultiplierEl = document.getElementById('sunday-multiplier');
+                    
+                    if (dailySalaryEl) dailySalaryEl.value = salaryConfig.dailySalary;
+                    if (overtimeRateEl) overtimeRateEl.value = salaryConfig.overtimeRate;
+                    if (halfDayRateEl) halfDayRateEl.value = salaryConfig.halfDayRate;
+                    if (sundayMultiplierEl) sundayMultiplierEl.value = salaryConfig.sundayMultiplier;
+                } catch (e) {
+                    console.warn("Gagal load konfigurasi gaji:", e);
+                }
             }
             
-            console.log("✅ Aplikasi siap");
+            setupDateFilters();
+            setupDateInputs();
+            loadAttendanceData();
+            
+            const hour = now.getHours();
+            let greeting = 'Selamat malam';
+            if (hour < 12) greeting = 'Selamat pagi';
+            else if (hour < 15) greeting = 'Selamat siang';
+            else if (hour < 19) greeting = 'Selamat sore';
+            
+            const greetingTextEl = document.getElementById('greeting-text');
+            if (greetingTextEl) greetingTextEl.textContent = `${greeting}!`;
+            
+            console.log("✅ Aplikasi siap digunakan");
         }
 
-        // ========== JALANKAN SAAT HALAMAN DIMUAT ==========
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("📱 Halaman dimuat");
-            
-            // Set tanggal default
-            setupDefaultDates();
-            
-            // Setup event listeners
-            setupEventListeners();
-            
-            // Coba load data untuk public view
-            if (database) {
-                loadAttendanceData();
-            }
-        });
+        // ========== EVENT LISTENERS ==========
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const password = document.getElementById('password').value;
+                
+                if (password === APP_PASSWORD) {
+                    currentUser = 'admin';
+                    loginPage.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    publicViewContainer.classList.add('hidden');
+                    showNotification('Login sebagai Admin berhasil!', 'success');
+                    initializeApp();
+                } else {
+                    const loginError = document.getElementById('login-error');
+                    if (loginError) {
+                        loginError.textContent = 'Password salah!';
+                        loginError.classList.remove('hidden');
+                    }
+                    showNotification('Password salah!', 'error');
+                }
+            });
+        }
 
-        // ========== ERROR HANDLING ==========
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                currentUser = null;
+                appContainer.classList.add('hidden');
+                loginPage.classList.remove('hidden');
+                const passwordInput = document.getElementById('password');
+                if (passwordInput) passwordInput.value = '';
+                showNotification('Anda telah logout.', 'info');
+            });
+        }
+
+        if (publicViewBtn) {
+            publicViewBtn.addEventListener('click', function() {
+                loginPage.classList.add('hidden');
+                publicViewContainer.classList.remove('hidden');
+                currentUser = null;
+                initializeApp();
+                showNotification('Mode tampilan publik diaktifkan.', 'info');
+            });
+        }
+
+        if (backToLoginBtn) {
+            backToLoginBtn.addEventListener('click', function() {
+                publicViewContainer.classList.add('hidden');
+                loginPage.classList.remove('hidden');
+                showNotification('Silakan login untuk mengedit data.', 'info');
+            });
+        }
+
+        if (kasbonForm) {
+            kasbonForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if (!currentUser) {
+                    showNotification('Login sebagai admin dulu!', 'error');
+                    return;
+                }
+                
+                const date = kasbonDateInput ? kasbonDateInput.value : formatDateForInput(new Date());
+                const amount = document.getElementById('kasbon-amount')?.value;
+                const note = document.getElementById('kasbon-note')?.value;
+                
+                if (!amount || parseFloat(amount) <= 0) {
+                    showNotification('Masukkan jumlah kasbon yang valid!', 'error');
+                    return;
+                }
+                
+                const dateObj = new Date(date);
+                const formattedDate = formatDate(dateObj);
+                
+                if (confirm(`Tambah kasbon Rp ${parseFloat(amount).toLocaleString('id-ID')} untuk tanggal ${formattedDate}?`)) {
+                    const button = this.querySelector('button');
+                    const done = showLoading(button);
+                    await saveAttendance(date, undefined, parseFloat(amount), undefined, undefined, note);
+                    done();
+                    
+                    const kasbonAmountEl = document.getElementById('kasbon-amount');
+                    const kasbonNoteEl = document.getElementById('kasbon-note');
+                    
+                    if (kasbonAmountEl) kasbonAmountEl.value = '';
+                    if (kasbonNoteEl) kasbonNoteEl.value = '';
+                    if (kasbonDateInput) kasbonDateInput.value = formatDateForInput(new Date());
+                }
+            });
+        }
+
+        if (overtimeForm) {
+            overtimeForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if (!currentUser) {
+                    showNotification('Login sebagai admin dulu!', 'error');
+                    return;
+                }
+                
+                const date = overtimeDateInput ? overtimeDateInput.value : formatDateForInput(new Date());
+                const overtimeHours = document.getElementById('overtime-hours')?.value || 0;
+                const sundayBonus = document.getElementById('sunday-bonus')?.value || 0;
+                
+                if (parseFloat(overtimeHours) <= 0 && parseFloat(sundayBonus) <= 0) {
+                    showNotification('Isi jam lembur atau bonus minggu!', 'error');
+                    return;
+                }
+                
+                const dateObj = new Date(date);
+                const formattedDate = formatDate(dateObj);
+                
+                let message = `Simpan data untuk tanggal ${formattedDate}?\n`;
+                if (overtimeHours > 0) message += `- Lembur: ${overtimeHours} jam\n`;
+                if (sundayBonus > 0) message += `- Bonus Minggu: Rp ${parseFloat(sundayBonus).toLocaleString('id-ID')}`;
+                
+                if (confirm(message)) {
+                    const button = this.querySelector('button');
+                    const done = showLoading(button);
+                    await saveAttendance(date, undefined, undefined, parseFloat(overtimeHours), parseFloat(sundayBonus));
+                    done();
+                    
+                    const overtimeHoursEl = document.getElementById('overtime-hours');
+                    const sundayBonusEl = document.getElementById('sunday-bonus');
+                    
+                    if (overtimeHoursEl) overtimeHoursEl.value = '';
+                    if (sundayBonusEl) sundayBonusEl.value = '';
+                    if (overtimeDateInput) overtimeDateInput.value = formatDateForInput(new Date());
+                }
+            });
+        }
+
+        if (calculateSalaryBtn) {
+            calculateSalaryBtn.addEventListener('click', function() {
+                const dailySalaryEl = document.getElementById('daily-salary');
+                const overtimeRateEl = document.getElementById('overtime-rate');
+                const halfDayRateEl = document.getElementById('half-day-rate');
+                const sundayMultiplierEl = document.getElementById('sunday-multiplier');
+                
+                if (dailySalaryEl) salaryConfig.dailySalary = parseInt(dailySalaryEl.value) || 100000;
+                if (overtimeRateEl) salaryConfig.overtimeRate = parseInt(overtimeRateEl.value) || 20000;
+                if (halfDayRateEl) salaryConfig.halfDayRate = parseInt(halfDayRateEl.value) || 50000;
+                if (sundayMultiplierEl) salaryConfig.sundayMultiplier = parseFloat(sundayMultiplierEl.value) || 2;
+                
+                localStorage.setItem('absensi_salary_config', JSON.stringify(salaryConfig));
+                loadAttendanceData();
+                showNotification('Perhitungan gaji diperbarui!', 'success');
+            });
+        }
+
+        // ========== JALANKAN APLIKASI ==========
+        console.log("📱 Aplikasi Absensi Kerja dimuat");
+        
+        // Inisialisasi Firebase pertama kali
+        initializeFirebase();
+        
+        const now = new Date();
+        const currentMonth = now.toISOString().slice(0, 7);
+        if (monthSelector) monthSelector.value = currentMonth;
+        if (publicMonthSelector) publicMonthSelector.value = currentMonth;
+        selectedMonth = currentMonth;
+
+        // Coba login otomatis jika sudah login sebelumnya
+        if (localStorage.getItem('absensi_logged_in') === 'true') {
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                passwordInput.value = 'admin123';
+                // Tunggu Firebase siap sebelum login
+                setTimeout(() => {
+                    const loginForm = document.getElementById('login-form');
+                    if (loginForm) {
+                        loginForm.dispatchEvent(new Event('submit'));
+                    }
+                }, 1000);
+            }
+        }
+
         window.addEventListener('error', function(e) {
-            console.error('Error:', e.error);
-            showNotification('Terjadi kesalahan', 'error');
+            console.error('Error global:', e.error);
+            showNotification('Terjadi kesalahan dalam aplikasi.', 'error');
         });
     </script>
 </body>
