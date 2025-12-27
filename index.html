@@ -294,7 +294,7 @@
             <div class="mb-3">
                 <label for="password" class="form-label">Password Admin</label>
                 <input type="password" class="form-control" id="password" placeholder="Masukkan password admin" required>
-                <div class="form-text">Hubungi Admin <code>Hafiznet</code>. Hanya Anda yang bisa mengubah data.</div>
+                <div class="form-text">Hubungi Admin <code>Hafiznet</code>. Hanya Admin yang bisa mengubah data.</div>
             </div>
             <button type="submit" class="btn btn-primary w-100">
                 <i class="fas fa-sign-in-alt"></i> Login sebagai Admin
@@ -603,21 +603,21 @@
                                     <label for="daily-salary" class="form-label">Gaji Harian</label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
-                                        <input type="number" class="form-control" id="daily-salary" value="100000">
+                                        <input type="number" class="form-control" id="daily-salary" value="50000">
                                     </div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="overtime-rate" class="form-label">Rate Lembur per Sesi</label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
-                                        <input type="number" class="form-control" id="overtime-rate" value="20000">
+                                        <input type="number" class="form-control" id="overtime-rate" value="10000">
                                     </div>
                                 </div>
                                 <div class="col-md-3 mb-3">
                                     <label for="half-day-rate" class="form-label">Gaji Setengah Hari</label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
-                                        <input type="number" class="form-control" id="half-day-rate" value="50000">
+                                        <input type="number" class="form-control" id="half-day-rate" value="25000">
                                     </div>
                                 </div>
                                 <div class="col-md-3 mb-3">
@@ -680,7 +680,7 @@
                                         <tr class="total-row">
                                             <td colspan="3"><strong>Total</strong></td>
                                             <td><strong id="footer-kasbon">Rp 0</strong></td>
-                                            <td><strong id="footer-overtime">0 jam</strong></td>
+                                            <td><strong id="footer-overtime">0 sesi</strong></td>
                                             <td><strong id="footer-bonus">Rp 0</strong></td>
                                             <td><strong id="footer-gaji">Rp 0</strong></td>
                                             <td><strong id="footer-total">Rp 0</strong></td>
@@ -822,7 +822,7 @@
                                             <th>Hari</th>
                                             <th>Status</th>
                                             <th>Kasbon</th>
-                                            <th>Lembur (jam)</th>
+                                            <th>Lembur (sesi)</th>
                                             <th>Bonus Minggu</th>
                                             <th>Gaji Harian</th>
                                             <th>Total</th>
@@ -840,7 +840,7 @@
                                         <tr class="total-row">
                                             <td colspan="3"><strong>Total</strong></td>
                                             <td><strong id="public-footer-kasbon">Rp 0</strong></td>
-                                            <td><strong id="public-footer-overtime">0 jam</strong></td>
+                                            <td><strong id="public-footer-overtime">0 sesi</strong></td>
                                             <td><strong id="public-footer-bonus">Rp 0</strong></td>
                                             <td><strong id="public-footer-gaji">Rp 0</strong></td>
                                             <td><strong id="public-footer-total">Rp 0</strong></td>
@@ -893,9 +893,9 @@
         let currentUser = null;
         let attendanceData = [];
         let salaryConfig = {
-            dailySalary: 100000,
-            overtimeRate: 20000,
-            halfDayRate: 50000,
+            dailySalary: 50000,
+            overtimeRate: 10000,
+            halfDayRate: 25000,
             sundayMultiplier: 2
         };
         let database = null;
